@@ -34,7 +34,8 @@ export function Board({port, initial, rowScope, onConfig, onClose, preview}: Pro
   const pendingRef = useRef(new Set<string>());
   const loadingRef = useRef(false);
   const sequence = useRef(0);
-  const dragRef = useRef<{row: Row; tagId: string; fieldId: string; pointerId: number; x: number; y: number; active: boolean}>();
+  const dragRef = useRef<{row: Row; tagId: string; fieldId: string; pointerId: number; x: number; y: number; currentX: number; currentY: number; scroller: HTMLElement | null; active: boolean}>();
+  const scrollFrameRef = useRef<number>();
   const connect = useCallback(async (input: string, prior?: Partial<Config>) => {
     if (pendingRef.current.size || loadingRef.current || dragRef.current) return;
     const seq = ++sequence.current;
@@ -114,24 +115,51 @@ export function Board({port, initial, rowScope, onConfig, onClose, preview}: Pro
       if (!sameCell(expected, next)) await write(row, groupField.id, expected, next);
     } catch (e) {setError(message(e));}
   };
-  const cancelDrag = () => {dragRef.current = undefined; setDragging(''); setOver('');};
+  const stopAutoScroll = () => {
+    if (scrollFrameRef.current !== undefined) window.cancelAnimationFrame(scrollFrameRef.current);
+    scrollFrameRef.current = undefined;
+  };
+  const cancelDrag = () => {stopAutoScroll(); dragRef.current = undefined; setDragging(''); setOver('');};
   const columnAt = (x: number, y: number) => document.elementFromPoint(x, y)?.closest<HTMLElement>('[data-column-id]')?.dataset.columnId;
+  const startAutoScroll = () => {
+    if (scrollFrameRef.current !== undefined) return;
+    let last = 0;
+    const step = (now: number) => {
+      scrollFrameRef.current = undefined;
+      const drag = dragRef.current;
+      const scroller = drag?.scroller;
+      if (!drag?.active || !scroller?.isConnected) return;
+      const rect = scroller.getBoundingClientRect();
+      if (drag.currentY < rect.top || drag.currentY > rect.bottom) return;
+      const edge = Math.min(56, rect.width / 4);
+      const speed = drag.currentX < rect.left + edge
+        ? -Math.min(1, (rect.left + edge - drag.currentX) / edge)
+        : drag.currentX > rect.right - edge
+          ? Math.min(1, (drag.currentX - (rect.right - edge)) / edge)
+          : 0;
+      if (!speed) return;
+      const elapsed = last ? Math.min(0.05, Math.max(0, (now - last) / 1000)) : 1 / 60;
+      scroller.scrollLeft += speed * 900 * elapsed;
+      last = now;
+      const target = columnAt(drag.currentX, drag.currentY);
+      setOver(target && target !== UNKNOWN ? target : '');
+      const canScroll = speed > 0 ? scroller.scrollLeft < scroller.scrollWidth - scroller.clientWidth : scroller.scrollLeft > 0;
+      if (canScroll) scrollFrameRef.current = window.requestAnimationFrame(step);
+    };
+    scrollFrameRef.current = window.requestAnimationFrame(step);
+  };
   const startDrag = (e: React.PointerEvent<HTMLElement>, row: Row) => {
-    if (e.button !== 0 || pendingRef.current.has(row.id) || (e.target as HTMLElement).closest('button,select,input,textarea,a')) return;
-    dragRef.current = {row, tagId: config.tagId, fieldId: config.groupFieldId, pointerId: e.pointerId, x: e.clientX, y: e.clientY, active: false};
+    const target = e.target as HTMLElement;
+    if (e.button !== 0 || pendingRef.current.has(row.id) || target.closest('button,select,input,textarea,a') || (e.pointerType === 'touch' && !target.closest('.grip'))) return;
+    dragRef.current = {row, tagId: config.tagId, fieldId: config.groupFieldId, pointerId: e.pointerId, x: e.clientX, y: e.clientY, currentX: e.clientX, currentY: e.clientY, scroller: e.currentTarget.closest('.board-scroll'), active: false};
     e.currentTarget.setPointerCapture(e.pointerId);
   };
   const updateDrag = (e: React.PointerEvent<HTMLElement>) => {
     const payload = dragRef.current;
     if (!payload || payload.pointerId !== e.pointerId) return;
     if (!payload.active && Math.hypot(e.clientX - payload.x, e.clientY - payload.y) < 8) return;
-    payload.active = true; e.preventDefault(); setDragging(payload.row.id);
-    const scroller = e.currentTarget.closest('.board-scroll');
-    if (scroller) {
-      const rect = scroller.getBoundingClientRect();
-      if (e.clientX > rect.right - 45) scroller.scrollLeft += 22;
-      else if (e.clientX < rect.left + 45) scroller.scrollLeft -= 22;
-    }
+    payload.active = true; payload.currentX = e.clientX; payload.currentY = e.clientY;
+    e.preventDefault(); setDragging(payload.row.id); startAutoScroll();
     const target = columnAt(e.clientX, e.clientY);
     setOver(target && target !== UNKNOWN ? target : '');
   };
@@ -147,7 +175,7 @@ export function Board({port, initial, rowScope, onConfig, onClose, preview}: Pro
   useEffect(() => {
     const cancel = (e: KeyboardEvent) => {if (e.key === 'Escape') cancelDrag();};
     window.addEventListener('keydown', cancel);
-    return () => window.removeEventListener('keydown', cancel);
+    return () => {window.removeEventListener('keydown', cancel); stopAutoScroll(); dragRef.current = undefined;};
   }, []);
   const selectRow = (row: Row) => {
     setSelectedId(row.id);
