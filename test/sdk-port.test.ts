@@ -20,6 +20,63 @@ function setup() {
   return{data,nodes,writes,plugin,port,config,request};
 }
 describe('public SDK property write adapter',()=>{
+  it('loads native image cells without sending incompatible image payloads to the text converter',async()=>{
+    const {port,data,nodes,plugin,request,writes}=setup();
+    const fieldId='image-field';
+    data.fields.push({id:fieldId,name:'小节截图',type:'text',choices:[]});
+    nodes.set(fieldId,{_id:fieldId,text:['小节截图'],isProperty:async()=>true,getPropertyType:async()=> 'text',getChildrenRem:async()=>[]});
+    // A real native image uses percent: 0; the public SDK only accepts
+    // 5/25/50/100. It must remain intact when other fields are changed.
+    const raw=['',{i:'i',url:'%LOCAL_FILE%score.png',title:'小节截图',percent:0,width:1052,height:387,drawingData:{items:[]}},''];
+    nodes.get(request.rowId).values[fieldId]=raw;
+    const before=structuredClone(raw);
+    const convert=plugin.richText.toString;
+    plugin.richText.toString=vi.fn(async(value:any)=>{
+      if(value.some((part:any)=>part?.i==='i' && part.percent===0)) throw new Error('richText.toString richText parameter: Invalid input');
+      return convert(value);
+    });
+    const loaded=await port.load(data.tagId);
+    expect(loaded.rows[0].cells[fieldId]).toEqual({text:'',refs:[],richText:before});
+    const sdkImage=plugin.richText.toString.mock.calls.flatMap(([value]:any[])=>value).find((part:any)=>part?.i==='i');
+    expect(sdkImage).toMatchObject({i:'i',url:'%LOCAL_FILE%score.png',width:1052,height:387,drawingData:{items:[]}});
+    expect(sdkImage).not.toHaveProperty('percent');
+    const saved=await port.write(request);
+    expect(saved.cells[fieldId].richText).toEqual(before);
+    expect(nodes.get(request.rowId).values[fieldId]).toEqual(before);
+    expect(writes).toHaveLength(1);
+    expect(writes[0].field).toBe(request.fieldId);
+  });
+  it('keeps text and reference previews when an untitled image occurs in a row title or mixed cell',async()=>{
+    const {port,data,nodes,plugin}=setup();
+    const row=nodes.get(data.rows[0].id);
+    const option=data.fields[0].choices[0];
+    row.text=['分段 ',{i:'i',url:'%LOCAL_FILE%title.png',percent:0}];
+    row.values[data.fields[2].id]=['说明 ',{i:'i',url:'%LOCAL_FILE%score.png',percent:0},' ',{i:'q',_id:option.id}];
+    const convert=plugin.richText.toString;
+    plugin.richText.toString=vi.fn(async(value:any)=>{
+      if(value.some((part:any)=>part?.i==='i' && part.percent===0)) throw new Error('invalid image');
+      return convert(value);
+    });
+    const loaded=await port.load(data.tagId);
+    expect(loaded.rows[0].name).toBe('分段 ');
+    expect(loaded.rows[0].title?.richText).toEqual(row.text);
+    expect(loaded.rows[0].cells[data.fields[2].id]).toEqual({text:`说明  ${option.name}`,refs:[option.id],richText:row.values[data.fields[2].id]});
+  });
+  it('preserves supported image sizes and refuses to replace an image record with plain text',async()=>{
+    const {port,data,nodes,plugin,request,writes}=setup();
+    const raw=[{i:'i',url:'%LOCAL_FILE%score.png',percent:50,width:400,height:200}];
+    request.fieldId=request.config.recordFieldId;
+    nodes.get(request.rowId).values[request.fieldId]=raw;
+    const convert=plugin.richText.toString;
+    plugin.richText.toString=vi.fn(convert);
+    const loaded=await port.load(data.tagId);
+    request.expected=loaded.rows[0].cells[request.fieldId];
+    request.value={text:'替换文字',refs:[]};
+    expect(plugin.richText.toString.mock.calls.some(([value]:any[])=>value[0]===raw[0])).toBe(true);
+    await expect(port.write(request)).rejects.toThrow('富文本');
+    expect(writes).toEqual([]);
+    expect(nodes.get(request.rowId).values[request.fieldId]).toEqual(raw);
+  });
   it('loads all rows, property options and a current-table subset',async()=>{const{port,data}=setup();expect((await port.load(data.tagId)).rows).toHaveLength(9);expect((await port.load(data.tagId,[data.rows[2].id])).rows.map(r=>r.id)).toEqual([data.rows[2].id]);expect((await port.load(data.tagId,[])).rows).toHaveLength(0);});
   it('writes only proficiency, reads it back, and preserves identity, parent and record',async()=>{const{port,request,data,writes}=setup();const saved=await port.write(request);expect(writes).toEqual([{row:request.rowId,field:request.fieldId,raw:[{i:'q',_id:request.value.refs[0]}]}]);expect(saved.parentId).toBe(data.rows[0].parentId);expect(saved.cells[request.config.recordFieldId]).toEqual(data.rows[0].cells[request.config.recordFieldId]);expect(saved.id).toBe(request.rowId);});
   it('saves and reads back progress text independently',async()=>{const{port,request,data,writes}=setup();request.fieldId=request.config.recordFieldId;request.expected=data.rows[0].cells[request.fieldId];request.value={text:'慢速练习8次\n定位改善',refs:[]};const saved=await port.write(request);expect(saved.cells[request.fieldId]).toEqual(request.value);expect(writes).toHaveLength(1);});

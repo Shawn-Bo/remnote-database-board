@@ -9,6 +9,8 @@ A RemNote plugin that presents rows of an existing advanced table as a board gro
 3. Use the dropdown on a card to change its group, or drag the card using its handle. Open the card to edit a plain-text progress field; use the arrow to open its original Rem. The board and table view use the same underlying rows.
 4. Progress drafts are automatically stored on the current device. Wait for **草稿已暂存在此设备** before dismissing the RemNote popup; the board's own close and open-original buttons wait for draft storage. Reopening the same record restores its draft. **保存记录** explicitly writes the record to the original Rem; unsaved drafts do not sync to other devices. If the original changes during editing, the board preserves the draft and asks you to merge the latest contents before allowing a save.
 
+Image properties display their actual content in board cards, table cells and record details using RemNote's native RichText renderer, including its managed-file resolution. Original image data is preserved. Text extraction uses a separate compatible copy to avoid SDK argument-validation failures for native image metadata such as `percent: 0` (fixed in 0.2.3).
+
 When opened from a table's property menu, the board initially uses that table's row IDs at the moment it was opened. Refresh keeps this subset; choose **显示数据库全部分段** to include all tagged rows, including newly added segments. Connecting a different database clears the old table's subset.
 
 The interface is responsive and opts into mobile loading. An actual iPhone/iPad installation and touch/sync test has not yet been completed. RemNote reports that plugins are unavailable when offline.

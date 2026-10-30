@@ -1,7 +1,9 @@
-export interface Cell { text: string; refs: string[] }
+import type {RichTextInterface} from '@remnote/plugin-sdk';
+
+export interface Cell { text: string; refs: string[]; richText?: RichTextInterface }
 export interface Choice { id: string; name: string }
 export interface Field { id: string; name: string; type: string; choices: Choice[] }
-export interface Row { id: string; name: string; parentId: string | null; cells: Record<string, Cell> }
+export interface Row { id: string; name: string; title?: Cell; parentId: string | null; cells: Record<string, Cell> }
 export interface Snapshot { tagId: string; name: string; fields: Field[]; rows: Row[]; loadedAt: number }
 export interface Config { tagId: string; groupFieldId: string; filterFieldId: string; recordFieldId: string }
 export interface WriteRequest { config: Config; rowId: string; fieldId: string; expected: Cell; value: Cell }

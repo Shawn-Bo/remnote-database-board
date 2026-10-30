@@ -1,5 +1,5 @@
 import React, {useCallback, useEffect, useMemo, useState} from 'react';
-import {renderWidget, usePlugin} from '@remnote/plugin-sdk';
+import {RichText, renderWidget, usePlugin} from '@remnote/plugin-sdk';
 import {Board} from '../Board';
 import {SdkBoardPort} from '../sdk-port';
 import {LAST_CONFIG_KEY, configKey, saveConfig} from '../config';
@@ -31,6 +31,7 @@ function BoardWidget() {
     return () => {alive = false;};
   }, [plugin]);
   if (error) return <div role="alert">看板初始化失败：{error}</div>;
-  return context ? <Board port={port} initial={context.initial} draftStore={drafts} rowScope={context.rowScope} onConfig={persist} onClose={() => plugin.widget.closePopup()}/> : <div style={{padding: 24}}>正在连接 RemNote 数据库…</div>;
+  return context ? <Board port={port} initial={context.initial} draftStore={drafts} rowScope={context.rowScope} onConfig={persist} onClose={() => plugin.widget.closePopup()}
+    renderRichCell={(cell, mode) => <RichText text={cell.richText!} width="100%" height="auto" maxHeight={mode === 'card' ? 160 : mode === 'table' ? 200 : 500}/>}/> : <div style={{padding: 24}}>正在连接 RemNote 数据库…</div>;
 }
 renderWidget(BoardWidget);

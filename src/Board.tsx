@@ -11,11 +11,12 @@ interface Props {
   onConfig?: (config: Config) => Promise<void>;
   onClose?: () => Promise<void>;
   preview?: boolean;
+  renderRichCell?: (cell: Cell, mode: 'card' | 'table' | 'detail') => React.ReactNode;
 }
 const message = (e: unknown) => e instanceof Error ? e.message : String(e);
 const PALETTE = ['#cbbfde','#b9c6e1','#d8bdb4','#c8d3ac','#ead393','#c1dcd7','#d5c4db','#c2d1e0','#dcc9ab'];
 
-export function Board({port, initial, draftStore, rowScope, onConfig, onClose, preview}: Props) {
+export function Board({port, initial, draftStore, rowScope, onConfig, onClose, preview, renderRichCell}: Props) {
   const [snapshot, setSnapshot] = useState<Snapshot>();
   const [config, setConfig] = useState<Config>({tagId: initial.tagId, groupFieldId: initial.groupFieldId ?? '', filterFieldId: initial.filterFieldId ?? '', recordFieldId: initial.recordFieldId ?? ''});
   const [sourceInput, setSourceInput] = useState(initial.tagId);
@@ -117,6 +118,9 @@ export function Board({port, initial, draftStore, rowScope, onConfig, onClose, p
   const groups = groupField ? groupedRows(rows, groupField) : new Map<string, Row[]>();
   const filterOptions = snapshot ? [...new Set(snapshot.rows.map(r => r.cells[config.filterFieldId]?.text ?? ''))].sort((a,b) => a.localeCompare(b, 'zh-CN')) : [];
   const selected = snapshot?.rows.find(r => r.id === selectedId);
+  const cellContent = (cell: Cell | undefined, mode: 'card' | 'table' | 'detail') =>
+    cell?.richText && renderRichCell ? renderRichCell(cell, mode) : cell?.text || '—';
+  const imageFields = snapshot?.fields.filter(field => snapshot.rows.some(row => row.cells[field.id]?.richText)) ?? [];
   const draft = useRecordDraft(draftStore,
     selected && recordField ? draftKey(config.tagId, selected.id, recordField.id) : '',
     selected && recordField ? selected.cells[recordField.id] ?? emptyCell() : undefined);
@@ -251,13 +255,14 @@ export function Board({port, initial, draftStore, rowScope, onConfig, onClose, p
           <div className="card-top"><span className="grip" aria-hidden="true">⠿</span><button className="card-title" onClick={() => selectRow(row)}>{row.name}</button><button className="open-note" aria-label={`打开${row.name}原笔记`} title="打开原笔记" onClick={() => void open(row.id)}>↗</button></div>
           {filterField && <div className="card-song">{row.cells[filterField.id]?.text || '未设置'}</div>}
           {recordField && row.cells[recordField.id]?.text && <p className="card-preview">{row.cells[recordField.id].text}</p>}
+          {imageFields.filter(field => row.cells[field.id]?.richText).map(field => <div className="card-media" key={field.id} aria-label={`${row.name}的${field.name}`}>{cellContent(row.cells[field.id], 'card')}</div>)}
           <div className="card-bottom">{statusSelect(row)}<button className="record-button" onClick={() => selectRow(row)}>记录</button></div>
         </article>)}
           {!groups.get(column.id)?.length && <div className="empty-column">拖动分段到这里</div>}
         </div>
       </section>)}
       {!columns.length && snapshot && <div className="empty-state">没有符合条件的分段。可以切换歌曲、清除搜索或显示空栏。</div>}
-    </div></div> : <div className="table-scroll"><table><thead><tr><th>分段</th>{snapshot?.fields.map(f => <th key={f.id}>{f.name}</th>)}</tr></thead><tbody>{rows.map(row => <tr key={row.id} data-row-id={row.id}><td><button className="table-name" onClick={() => selectRow(row)}>{row.name}</button><button className="open-note" aria-label={`打开${row.name}原笔记`} onClick={() => void open(row.id)}>↗</button></td>{snapshot?.fields.map(f => <td key={f.id}>{f.id === config.groupFieldId ? statusSelect(row) : row.cells[f.id]?.text || '—'}</td>)}</tr>)}</tbody></table>{!rows.length && <div className="empty-state">没有符合条件的分段。</div>}</div>}
+    </div></div> : <div className="table-scroll"><table><thead><tr><th>分段</th>{snapshot?.fields.map(f => <th key={f.id}>{f.name}</th>)}</tr></thead><tbody>{rows.map(row => <tr key={row.id} data-row-id={row.id}><td><button className="table-name" onClick={() => selectRow(row)}>{row.name}</button><button className="open-note" aria-label={`打开${row.name}原笔记`} onClick={() => void open(row.id)}>↗</button></td>{snapshot?.fields.map(f => <td key={f.id}>{f.id === config.groupFieldId ? statusSelect(row) : cellContent(row.cells[f.id], 'table')}</td>)}</tr>)}</tbody></table>{!rows.length && <div className="empty-state">没有符合条件的分段。</div>}</div>}
 
     {selected && <div className="drawer-backdrop" onClick={() => void closeDetail()}><aside className="detail-drawer" role="dialog" aria-modal="true" aria-label={`${selected.name}训练记录`} onClick={e => e.stopPropagation()}>
       <div className="drawer-heading"><span className="drawer-heading-label">分段记录</span><span className="drawer-heading-title">{selected.name}</span><div className="drawer-heading-actions">{recordField && <button className="primary-button" disabled={pending.has(selected.id) || !draft.dirty || draft.conflict} onClick={() => void write(selected, recordField.id, draft.base, {text: draft.text, refs: []})}>{pending.has(selected.id) ? '正在保存…' : '保存记录'}</button>}<button aria-label="关闭记录" disabled={pending.has(selected.id)} onClick={() => void closeDetail()}>×</button></div></div>
@@ -267,6 +272,7 @@ export function Board({port, initial, draftStore, rowScope, onConfig, onClose, p
       {draft.conflict && recordField && <div className="record-conflict" role="alert"><p>原记录已更新。请把需保留的内容合并到编辑框，再继续保存。</p><details><summary>查看原记录最新内容</summary><pre>{selected.cells[recordField.id]?.text || '（空记录）'}</pre></details><button disabled={pending.has(selected.id)} onClick={() => {setDetailFeedback(undefined); draft.acknowledgeLatest();}}>已合并，允许保存</button></div>}
       <h2>{selected.name}</h2><p className="drawer-song">{filterField && selected.cells[filterField.id]?.text}</p>
       <label className="drawer-status">{groupField?.name}{statusSelect(selected)}</label>
+      {imageFields.filter(field => selected.cells[field.id]?.richText).map(field => <section className="drawer-media" key={field.id}><h3>{field.name}</h3>{cellContent(selected.cells[field.id], 'detail')}</section>)}
       {recordField ? <><label className="record-label" htmlFor="record-draft">{recordField.name}</label><textarea id="record-draft" rows={12} value={draft.text} disabled={pending.has(selected.id) || !draft.ready} onChange={e => updateDraft(e.target.value)} placeholder="记录本次练习的内容、困难和进步…"/>
         <div className="drawer-actions"><button className="subtle-button" disabled={pending.has(selected.id) || !draft.ready} onClick={() => updateDraft(`${draft.text}${draft.text ? '\n\n' : ''}${new Date().toLocaleDateString('sv-SE')}\n`)}>追加今日记录</button></div></> : <p>请在连接与字段中选择文本记录属性，或直接打开原笔记继续记录。</p>}
       <button className="original-note" disabled={pending.size > 0} onClick={() => void open(selected.id)}>在 RemNote 打开完整笔记 ↗</button>

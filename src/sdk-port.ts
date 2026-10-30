@@ -1,6 +1,6 @@
 import type {RNPlugin, PluginRem, RichTextInterface} from '@remnote/plugin-sdk';
 import type {BoardPort, Cell, Choice, Field, Row, Snapshot, WriteRequest} from './model';
-import {emptyCell, sameCell} from './model';
+import {sameCell} from './model';
 
 export function references(value: unknown): string[] {
   const result: string[] = [];
@@ -19,11 +19,26 @@ export function references(value: unknown): string[] {
 export class SdkBoardPort implements BoardPort {
   private locks = new Set<string>();
   constructor(private plugin: RNPlugin) {}
+  private async displayText(value: RichTextInterface | undefined): Promise<string> {
+    // Native percent: 0 means an explicit pixel size, but the SDK input schema
+    // only accepts 5/25/50/100. Omit that unsupported hint in a copy used solely
+    // for text extraction; render the untouched original with RemNote RichText.
+    const input = (value ?? []).map(part => {
+      if (typeof part === 'object' && part !== null && part.i === 'i' &&
+          part.percent !== undefined && ![5, 25, 50, 100].includes(part.percent)) {
+        const {percent, ...image} = part;
+        return image;
+      }
+      return part;
+    });
+    return input.length ? await this.plugin.richText.toString(input) : '';
+  }
   private async title(rem: PluginRem): Promise<string> {
-    return await this.plugin.richText.toString(rem.text ?? []);
+    return this.displayText(rem.text);
   }
   private async cell(value: RichTextInterface | undefined): Promise<Cell> {
-    return {text: value ? await this.plugin.richText.toString(value) : '', refs: references(value)};
+    const hasImage = value?.some(part => typeof part === 'object' && part !== null && part.i === 'i');
+    return {text: await this.displayText(value), refs: references(value), ...(hasImage ? {richText: value} : {})};
   }
   private async fields(tag: PluginRem): Promise<Field[]> {
     const fields: Field[] = [];
@@ -50,7 +65,8 @@ export class SdkBoardPort implements BoardPort {
   private async row(rem: PluginRem, fields: Field[]): Promise<Row> {
     const cells: Record<string, Cell> = {};
     for (const field of fields) cells[field.id] = await this.cell(await rem.getTagPropertyValue(field.id));
-    return {id: rem._id, name: await this.title(rem), parentId: rem.parent, cells};
+    const title = await this.cell(rem.text);
+    return {id: rem._id, name: title.text, ...(title.richText ? {title} : {}), parentId: rem.parent, cells};
   }
   async load(tagId: string, rowIds?: string[]): Promise<Snapshot> {
     const tag = await this.plugin.rem.findOne(tagId);

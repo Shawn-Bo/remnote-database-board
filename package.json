@@ -1,6 +1,6 @@
 {
   "name": "fanvane-remnote-database-board",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "private": true,
   "license": "MIT",
   "scripts": {
