@@ -1,6 +1,6 @@
 {
   "name": "fanvane-remnote-database-board",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "private": true,
   "license": "MIT",
   "scripts": {
@@ -9,6 +9,7 @@
     "test": "vitest run",
     "test:browser": "node scripts/test-browser.cjs",
     "test:mobile": "node scripts/test-mobile.cjs",
+    "test:touch": "node scripts/test-touch.cjs",
     "serve": "node scripts/serve.cjs"
   },
   "dependencies": {
