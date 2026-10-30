@@ -7,6 +7,9 @@ A RemNote plugin that presents rows of an existing advanced table as a board gro
 1. Open the command **数据库看板** (Database Board), or choose **以看板打开** from an advanced-table property menu. If no source was previously selected, paste the table's underlying tag link or ID and select **连接**.
 2. Choose a single-select grouping property. Optionally choose a filter property and a text record property. The selected configuration is stored with RemNote's synced plugin storage so it can be reused on the user's other devices.
 3. Use the dropdown on a card to change its group, or drag the card using its handle. Open the card to edit a plain-text progress field; use the arrow to open its original Rem. The board and table view use the same underlying rows.
+4. Progress drafts are automatically stored on the current device. Wait for **草稿已暂存在此设备** before dismissing the RemNote popup; the board's own close and open-original buttons wait for draft storage. Reopening the same record restores its draft. **保存记录** explicitly writes the record to the original Rem; unsaved drafts do not sync to other devices. If the original changes during editing, the board preserves the draft and asks you to merge the latest contents before allowing a save.
+
+When opened from a table's property menu, the board initially uses that table's row IDs at the moment it was opened. Refresh keeps this subset; choose **显示数据库全部分段** to include all tagged rows, including newly added segments. Connecting a different database clears the old table's subset.
 
 The interface is responsive and opts into mobile loading. An actual iPhone/iPad installation and touch/sync test has not yet been completed. RemNote reports that plugins are unavailable when offline.
 
@@ -14,8 +17,9 @@ The interface is responsive and opts into mobile loading. An actual iPhone/iPad 
 
 - The plugin uses RemNote's public SDK in the current client. It does not send note contents, identifiers, or user credentials to external APIs or analytics services.
 - RemNote serves the plugin's static code. RemNote's own account and synchronization mechanisms apply to the underlying records.
+- Unsaved plain-text drafts and their original text are stored in RemNote's device-local plugin storage, keyed by database, record and field. A confirmed record save clears its draft value. Drafts remain local until explicitly saved to the original record. Clearing application data can remove them.
 - The required SDK scope is `All / ReadCreateModify`: the SDK does not offer a narrower general-purpose modify scope for arbitrary existing table properties. The plugin reads the selected tag, fields, options, and tagged rows. It updates only the configured grouping and plain-text record fields in response to an explicit user action; it does not create, delete, reparent, or duplicate records.
-- Before writing, it checks row membership, current field value, selected option, and expected previous value; after writing, it reads back the value and checks the row's parent. The SDK operation is not atomic across simultaneous external edits.
+- Before writing, it checks row membership, current field value, selected option, and expected previous value; after writing, it reads back the value and checks the row's parent. The SDK operation is not atomic across simultaneous external edits. Readback confirms the value in the current client, not server sync completion. Avoid simultaneous edits to the same field from multiple devices.
 - Text record editing rejects rich text to avoid discarding formatting. Edit rich or structured content in the original Rem.
 - `src/demo-*.json` contains invented examples for local testing, not real RemNote content. The plugin package excludes the independent preview and example data.
 - This submission is marked unlisted. An unlisted plugin is accessible through its plugin URL after approval; it is not a privacy boundary for its source code.
@@ -36,4 +40,4 @@ npm run serve
 
 ## Scope of validation
 
-Unit tests and an independent browser fixture exercise grouping, filtering, editing, cancellation, and pointer drag. The previous local development build was also tested in the desktop RemNote client using a disposable example table; the release bundle and real mobile device are not yet accepted. Drag-and-drop should be validated on the target device before relying on it; the status dropdown provides an alternative.
+Unit tests cover SDK write guards, draft restoration, failed local storage, external-edit recovery, save feedback, and source-table switching. Independent browser fixtures exercise grouping, filtering, editing, cancellation, and pointer drag. Three native iOS Simulator/WKWebView tests also pass for one-tap record save with the keyboard open, horizontal swipe without a write, and touch drag across nine columns. These fixtures use invented data and do not validate the real RemNote mobile SDK or sync. The previous local development build was tested in the desktop RemNote client using a disposable example table; the release bundle and real mobile device are not yet accepted. Drag-and-drop should be validated on the target device before relying on it; the status dropdown provides an alternative.
