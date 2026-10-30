@@ -4,12 +4,17 @@ import {Board} from '../Board';
 import {SdkBoardPort} from '../sdk-port';
 import {LAST_CONFIG_KEY, configKey, saveConfig} from '../config';
 import {readPaneContext} from '../widget-context';
+import {createDraftStore} from '../drafts';
 import type {Config} from '../model';
 import '../board.css';
 
 function BoardWidget() {
   const plugin = usePlugin();
   const port = useMemo(() => new SdkBoardPort(plugin), [plugin]);
+  const drafts = useMemo(() => createDraftStore({
+    get: key => plugin.storage.getLocal(key),
+    set: (key, value) => plugin.storage.setLocal(key, value)
+  }), [plugin]);
   const [context, setContext] = useState<{initial: Partial<Config> & {tagId: string}; rowScope?: string[]}>();
   const [error, setError] = useState('');
   const persist = useCallback((config: Config) => saveConfig(plugin, config), [plugin]);
@@ -26,6 +31,6 @@ function BoardWidget() {
     return () => {alive = false;};
   }, [plugin]);
   if (error) return <div role="alert">看板初始化失败：{error}</div>;
-  return context ? <Board port={port} initial={context.initial} rowScope={context.rowScope} onConfig={persist} onClose={() => plugin.widget.closePopup()}/> : <div style={{padding: 24}}>正在连接 RemNote 数据库…</div>;
+  return context ? <Board port={port} initial={context.initial} draftStore={drafts} rowScope={context.rowScope} onConfig={persist} onClose={() => plugin.widget.closePopup()}/> : <div style={{padding: 24}}>正在连接 RemNote 数据库…</div>;
 }
 renderWidget(BoardWidget);
