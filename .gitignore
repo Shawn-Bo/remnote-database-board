@@ -1,0 +1,7 @@
+node_modules/
+dist/
+PluginZip.zip
+.env
+.env.*
+.DS_Store
+test-output/
