@@ -1,0 +1,22 @@
+{
+  "manifestVersion": 1,
+  "id": "fanvane-database-board",
+  "name": "数据库看板",
+  "author": "Fanvane",
+  "description": "按单选属性展示数据库看板，拖动写回真实属性，保留原分段与训练记录。",
+  "version": {
+    "major": 0,
+    "minor": 2,
+    "patch": 0
+  },
+  "repoUrl": "https://github.com/Shawn-Bo/remnote-database-board",
+  "unlisted": true,
+  "enableOnMobile": true,
+  "requestNative": false,
+  "requiredScopes": [
+    {
+      "type": "All",
+      "level": "ReadCreateModify"
+    }
+  ]
+}
