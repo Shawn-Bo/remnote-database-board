@@ -3,6 +3,15 @@
 .card{user-select:none;touch-action:auto}.grip{touch-action:none;cursor:grab;padding:4px}.card.dragging,.card.dragging .grip{cursor:grabbing}
 
 .close-board{margin-left:auto;background:transparent;color:var(--muted);font-size:24px;line-height:1;padding:4px 9px;border-radius:6px}.close-board:hover{background:var(--page);color:var(--ink)}
+.drawer-heading-actions{display:flex;gap:8px;align-items:center}
+.drawer-heading-title{display:none}
+.drawer-heading .primary-button{background:#397c72;color:#fff;font-size:12px;min-height:44px}
+.drawer-feedback{font-size:12px;color:#397c72;margin:8px 0}.drawer-feedback.error{color:#a4453b}
+.drawer-feedback button,.draft-status button,.record-conflict button{background:transparent;color:inherit;text-decoration:underline;padding:8px}
+.draft-status{font-size:12px;color:var(--muted);margin:8px 0}.draft-status.error{color:#a4453b}
+.record-conflict{border:1px solid var(--line);border-radius:8px;padding:10px;font-size:12px;line-height:1.6;margin:8px 0}
+.record-conflict p{margin:0 0 8px}.record-conflict pre{font:inherit;white-space:pre-wrap;overflow-wrap:anywhere;max-height:160px;overflow:auto}
+@media(prefers-color-scheme:dark){.drawer-feedback.error,.draft-status.error{color:#f0b7ab}}
 @media(max-width:700px){
   .board-header{padding:16px 14px 0}
   .toolbar{gap:8px}
@@ -17,6 +26,18 @@
   .card-title,.open-note,.record-button{min-height:44px}
   select{-webkit-appearance:none;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='m3 6 5 5 5-5' fill='none' stroke='%238b929f' stroke-width='1.5'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;background-size:14px;padding-right:32px}
   .card-bottom select,.drawer-status select{font-size:16px;min-height:44px;max-width:none}
-  .detail-drawer textarea{font-size:16px}
+  .detail-drawer{padding:12px;display:flex;flex-direction:column}
+  .detail-drawer h2,.drawer-heading-label{display:none}
+  .drawer-heading-title{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-right:8px}
+  .drawer-heading{order:0;position:sticky;top:0;background:var(--surface);z-index:2}
+  .drawer-feedback{order:1}
+  .draft-status,.record-conflict{order:1}
+  .draft-status button,.record-conflict button,.drawer-feedback button{min-height:44px}
+  .record-label{order:2;margin-top:8px}
+  .detail-drawer textarea{order:3;font-size:16px;min-height:140px;height:160px}
+  .drawer-actions{order:4}
+  .drawer-song{order:5;margin-bottom:8px}
+  .drawer-status{order:6;margin-bottom:12px;gap:4px}
+  .original-note{order:7}
   .drawer-actions button,.original-note{min-height:44px}
 }

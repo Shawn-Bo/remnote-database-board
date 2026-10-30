@@ -1,10 +1,12 @@
 import React, {useCallback, useEffect, useRef, useState} from 'react';
 import type {BoardPort, Cell, Config, Row, Snapshot} from './model';
 import {EMPTY, UNKNOWN, cellForChoice, emptyCell, groupKey, groupedRows, inferConfig, parseRemId, sameCell, visibleRows} from './model';
+import {draftKey, useRecordDraft, type DraftStore} from './drafts';
 
 interface Props {
   port: BoardPort;
   initial: Partial<Config> & {tagId: string};
+  draftStore: DraftStore;
   rowScope?: string[];
   onConfig?: (config: Config) => Promise<void>;
   onClose?: () => Promise<void>;
@@ -13,7 +15,7 @@ interface Props {
 const message = (e: unknown) => e instanceof Error ? e.message : String(e);
 const PALETTE = ['#cbbfde','#b9c6e1','#d8bdb4','#c8d3ac','#ead393','#c1dcd7','#d5c4db','#c2d1e0','#dcc9ab'];
 
-export function Board({port, initial, rowScope, onConfig, onClose, preview}: Props) {
+export function Board({port, initial, draftStore, rowScope, onConfig, onClose, preview}: Props) {
   const [snapshot, setSnapshot] = useState<Snapshot>();
   const [config, setConfig] = useState<Config>({tagId: initial.tagId, groupFieldId: initial.groupFieldId ?? '', filterFieldId: initial.filterFieldId ?? '', recordFieldId: initial.recordFieldId ?? ''});
   const [sourceInput, setSourceInput] = useState(initial.tagId);
@@ -28,29 +30,33 @@ export function Board({port, initial, rowScope, onConfig, onClose, preview}: Pro
   const [dragging, setDragging] = useState('');
   const [over, setOver] = useState('');
   const [selectedId, setSelectedId] = useState('');
-  const [recordDraft, setRecordDraft] = useState('');
-  const [recordExpected, setRecordExpected] = useState<Cell>(emptyCell());
+  const [detailFeedback, setDetailFeedback] = useState<{error: boolean; text: string}>();
+  const [scope, setScope] = useState(rowScope ? {tagId: initial.tagId, rowIds: rowScope} : undefined);
+  const scopeRef = useRef(scope);
   const configRef = useRef(config);
   const pendingRef = useRef(new Set<string>());
   const loadingRef = useRef(false);
   const sequence = useRef(0);
   const dragRef = useRef<{row: Row; tagId: string; fieldId: string; pointerId: number; x: number; y: number; currentX: number; currentY: number; scroller: HTMLElement | null; active: boolean}>();
   const scrollFrameRef = useRef<number>();
-  const connect = useCallback(async (input: string, prior?: Partial<Config>) => {
+  const connect = useCallback(async (input: string, prior?: Partial<Config>, allRows = false) => {
     if (pendingRef.current.size || loadingRef.current || dragRef.current) return;
     const seq = ++sequence.current;
     loadingRef.current = true;
     setLoading(true); setError(''); setNotice('');
     try {
-      const data = await port.load(parseRemId(input), rowScope);
+      const tagId = parseRemId(input);
+      const nextScope = !allRows && scopeRef.current?.tagId === tagId ? scopeRef.current : undefined;
+      const data = await port.load(tagId, nextScope?.rowIds);
       if (sequence.current !== seq) return;
       const next = inferConfig(data, prior);
       configRef.current = next;
+      scopeRef.current = nextScope; setScope(nextScope);
       setConfig(next); setSnapshot(data); setFilter('*'); setSelectedId('');
       await onConfig?.(next);
     } catch (e) { if (sequence.current === seq) setError(message(e)); }
     finally {loadingRef.current = false; setLoading(false);}
-  }, [port, onConfig, rowScope]);
+  }, [port, onConfig]);
 
   const refresh = useCallback(async () => {
     if (pendingRef.current.size || loadingRef.current || dragRef.current) return;
@@ -59,7 +65,7 @@ export function Board({port, initial, rowScope, onConfig, onClose, preview}: Pro
     const seq = ++sequence.current;
     loadingRef.current = true;
     try {
-      const data = await port.load(id, rowScope);
+      const data = await port.load(id, scopeRef.current?.tagId === id ? scopeRef.current.rowIds : undefined);
       if (sequence.current === seq && !pendingRef.current.size && !dragRef.current) {
         const current = configRef.current;
         if (!data.fields.some(f => f.id === current.groupFieldId && f.type === 'single_select')) throw new Error('分组属性已改变，请重新选择熟练度属性。');
@@ -67,7 +73,7 @@ export function Board({port, initial, rowScope, onConfig, onClose, preview}: Pro
       }
     } catch (e) { if (sequence.current === seq) setError(message(e)); }
     finally { loadingRef.current = false; }
-  }, [port, rowScope]);
+  }, [port]);
 
   useEffect(() => {if (initial.tagId) void connect(initial.tagId, initial);}, [connect, initial]);
   useEffect(() => {
@@ -86,17 +92,22 @@ export function Board({port, initial, rowScope, onConfig, onClose, preview}: Pro
   };
   const write = async (row: Row, fieldId: string, expected: Cell, value: Cell) => {
     if (pendingRef.current.has(row.id)) return false;
+    const showInDetail = selectedId === row.id;
     ++sequence.current;
     pendingRef.current.add(row.id); setPending(new Set(pendingRef.current));
     setError(''); setNotice('');
+    if (showInDetail) setDetailFeedback(undefined);
     // Keep the last confirmed state until the SDK has written and read the value back.
     try {
       const saved = await port.write({config: configRef.current, rowId: row.id, fieldId, expected, value});
       setSnapshot(s => s ? {...s, rows: s.rows.map(r => r.id === saved.id ? saved : r)} : s);
-      if (fieldId === configRef.current.recordFieldId) {setRecordExpected(saved.cells[fieldId] ?? emptyCell()); setRecordDraft(saved.cells[fieldId]?.text ?? '');}
-      setNotice(preview ? '演示数据已更新（不写入 RemNote）' : '已写入原笔记，并回读确认');
+      if (showInDetail && fieldId === configRef.current.recordFieldId) await draft.saved(saved.cells[fieldId] ?? emptyCell());
+      const subject = fieldId === configRef.current.recordFieldId ? '记录' : '熟练度';
+      const text = preview ? `演示${subject}已更新（不写入 RemNote）` : `${subject}已写入原笔记，并在当前设备回读确认`;
+      setNotice(text);
+      if (showInDetail) setDetailFeedback({error: false, text});
       return true;
-    } catch (e) {setError(message(e)); return false;}
+    } catch (e) {const text = message(e); setError(text); if (showInDetail) setDetailFeedback({error: true, text}); return false;}
     finally {pendingRef.current.delete(row.id); setPending(new Set(pendingRef.current));}
   };
   const groupField = snapshot?.fields.find(f => f.id === config.groupFieldId);
@@ -106,6 +117,9 @@ export function Board({port, initial, rowScope, onConfig, onClose, preview}: Pro
   const groups = groupField ? groupedRows(rows, groupField) : new Map<string, Row[]>();
   const filterOptions = snapshot ? [...new Set(snapshot.rows.map(r => r.cells[config.filterFieldId]?.text ?? ''))].sort((a,b) => a.localeCompare(b, 'zh-CN')) : [];
   const selected = snapshot?.rows.find(r => r.id === selectedId);
+  const draft = useRecordDraft(draftStore,
+    selected && recordField ? draftKey(config.tagId, selected.id, recordField.id) : '',
+    selected && recordField ? selected.cells[recordField.id] ?? emptyCell() : undefined);
 
   const move = async (row: Row, target: string) => {
     if (!groupField) return;
@@ -179,10 +193,16 @@ export function Board({port, initial, rowScope, onConfig, onClose, preview}: Pro
   }, []);
   const selectRow = (row: Row) => {
     setSelectedId(row.id);
-    const cell = row.cells[config.recordFieldId] ?? emptyCell();
-    setRecordExpected(cell); setRecordDraft(cell.text);
+    setDetailFeedback(undefined);
   };
-  const open = async (id: string) => {try {await port.open(id); await onClose?.();} catch(e) {setError(message(e));}};
+  const closeDetail = async () => {if (!pendingRef.current.size && await draft.flush()) setSelectedId('');};
+  const closeBoard = async () => {if (!pendingRef.current.size && await draft.flush()) await onClose?.();};
+  const open = async (id: string) => {
+    if (pendingRef.current.size || !await draft.flush()) return;
+    try {await port.open(id); await onClose?.();}
+    catch(e) {const text = message(e); setError(text); if (selectedId) setDetailFeedback({error: true, text});}
+  };
+  const updateDraft = (text: string) => {setDetailFeedback(undefined); draft.update(text);};
   const statusSelect = (row: Row) => <select aria-label={`${row.name}的熟练度`} value={groupField ? groupKeyForRow(row) : EMPTY} disabled={pending.has(row.id)} onChange={e => void move(row, e.target.value)} onClick={e => e.stopPropagation()}>
     <option value={EMPTY}>未设置</option>
     {groupField?.choices.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
@@ -200,7 +220,7 @@ export function Board({port, initial, rowScope, onConfig, onClose, preview}: Pro
   return <main className="db-board">
     <header className="board-header">
       <div className="eyebrow">REMNOTE · DATABASE BOARD {preview && <span className="preview-tag">交互演示</span>}</div>
-      <div className="title-row"><h1>训练看板</h1><span className="database-label">{snapshot?.name || '连接数据库'}</span>{onClose && <button className="close-board" aria-label="关闭看板" disabled={pending.size > 0} onClick={() => void onClose()}>×</button>}</div>
+      <div className="title-row"><h1>训练看板</h1><span className="database-label">{snapshot?.name || '连接数据库'}</span>{onClose && <button className="close-board" aria-label="关闭看板" disabled={pending.size > 0} onClick={() => void closeBoard()}>×</button>}</div>
       <p className="subtitle">每张卡片都是原笔记。拖动更新熟练度，训练记录保留在原处。</p>
       <div className="toolbar">
         <div className="view-switch" role="group" aria-label="显示方式"><button className={view === 'board' ? 'active' : ''} onClick={() => setView('board')}>▥ 看板</button><button className={view === 'table' ? 'active' : ''} onClick={() => setView('table')}>☷ 表格</button></div>
@@ -209,7 +229,8 @@ export function Board({port, initial, rowScope, onConfig, onClose, preview}: Pro
         <label className="empty-toggle"><input type="checkbox" checked={hideEmpty} onChange={e => setHideEmpty(e.target.checked)}/>隐藏空栏</label>
         <button className="subtle-button" disabled={pending.size > 0 || loading} onClick={() => void refresh()}>刷新</button>
       </div>
-      <details className="connection" open={!snapshot ? true : undefined}><summary>连接与字段 <span>{rowScope ? '· 当前表格行范围' : '· 数据库全部分段'}</span></summary>
+      <details className="connection" open={!snapshot ? true : undefined}><summary>连接与字段 <span>{scope ? '· 打开时的表格行范围' : '· 数据库全部分段'}</span></summary>
+        {scope && <p>此范围取自打开看板时的表格。<button className="subtle-button" disabled={loading || pending.size > 0} onClick={() => void connect(config.tagId, config, true)}>显示数据库全部分段</button></p>}
         {!snapshot && <p>首次使用时，粘贴表格所属标签的链接或 ID，然后选择分组属性。</p>}
         <form onSubmit={e => {e.preventDefault(); void connect(sourceInput, config);}}><label>表格标签链接或 ID<input value={sourceInput} onChange={e => setSourceInput(e.target.value)} disabled={pending.size > 0}/></label><button disabled={loading || pending.size > 0}>连接</button></form>
         {snapshot && <div className="field-settings"><label>分组属性<select aria-label="分组属性" disabled={pending.size > 0} value={config.groupFieldId} onChange={e => void chooseConfig({groupFieldId: e.target.value})}>{snapshot.fields.filter(f => f.type === 'single_select').map(f => <option key={f.id} value={f.id}>{f.name}</option>)}</select></label>
@@ -238,13 +259,17 @@ export function Board({port, initial, rowScope, onConfig, onClose, preview}: Pro
       {!columns.length && snapshot && <div className="empty-state">没有符合条件的分段。可以切换歌曲、清除搜索或显示空栏。</div>}
     </div></div> : <div className="table-scroll"><table><thead><tr><th>分段</th>{snapshot?.fields.map(f => <th key={f.id}>{f.name}</th>)}</tr></thead><tbody>{rows.map(row => <tr key={row.id} data-row-id={row.id}><td><button className="table-name" onClick={() => selectRow(row)}>{row.name}</button><button className="open-note" aria-label={`打开${row.name}原笔记`} onClick={() => void open(row.id)}>↗</button></td>{snapshot?.fields.map(f => <td key={f.id}>{f.id === config.groupFieldId ? statusSelect(row) : row.cells[f.id]?.text || '—'}</td>)}</tr>)}</tbody></table>{!rows.length && <div className="empty-state">没有符合条件的分段。</div>}</div>}
 
-    {selected && <div className="drawer-backdrop" onClick={() => {if (!pending.has(selected.id)) setSelectedId('');}}><aside className="detail-drawer" role="dialog" aria-modal="true" aria-label={`${selected.name}训练记录`} onClick={e => e.stopPropagation()}>
-      <div className="drawer-heading"><span>分段记录</span><button aria-label="关闭记录" disabled={pending.has(selected.id)} onClick={() => setSelectedId('')}>×</button></div>
+    {selected && <div className="drawer-backdrop" onClick={() => void closeDetail()}><aside className="detail-drawer" role="dialog" aria-modal="true" aria-label={`${selected.name}训练记录`} onClick={e => e.stopPropagation()}>
+      <div className="drawer-heading"><span className="drawer-heading-label">分段记录</span><span className="drawer-heading-title">{selected.name}</span><div className="drawer-heading-actions">{recordField && <button className="primary-button" disabled={pending.has(selected.id) || !draft.dirty || draft.conflict} onClick={() => void write(selected, recordField.id, draft.base, {text: draft.text, refs: []})}>{pending.has(selected.id) ? '正在保存…' : '保存记录'}</button>}<button aria-label="关闭记录" disabled={pending.has(selected.id)} onClick={() => void closeDetail()}>×</button></div></div>
+      {detailFeedback && <p className={`drawer-feedback${detailFeedback.error ? ' error' : ''}`} role={detailFeedback.error ? 'alert' : 'status'}>{detailFeedback.text}{detailFeedback.error && <button onClick={() => void refresh()}>重新读取</button>}</p>}
+      {draft.error && <p className="draft-status error" role="alert">{draft.error}{draft.ready && <button onClick={() => void draft.flush()}>重试暂存</button>}</p>}
+      {draft.dirty && !draft.error && <p className="draft-status" role="status">{draft.persisted ? '草稿已暂存在此设备，尚未写入笔记。' : '正在此设备暂存草稿…'}</p>}
+      {draft.conflict && recordField && <div className="record-conflict" role="alert"><p>原记录已更新。请把需保留的内容合并到编辑框，再继续保存。</p><details><summary>查看原记录最新内容</summary><pre>{selected.cells[recordField.id]?.text || '（空记录）'}</pre></details><button disabled={pending.has(selected.id)} onClick={() => {setDetailFeedback(undefined); draft.acknowledgeLatest();}}>已合并，允许保存</button></div>}
       <h2>{selected.name}</h2><p className="drawer-song">{filterField && selected.cells[filterField.id]?.text}</p>
       <label className="drawer-status">{groupField?.name}{statusSelect(selected)}</label>
-      {recordField ? <><label className="record-label" htmlFor="record-draft">{recordField.name}</label><textarea id="record-draft" rows={12} value={recordDraft} disabled={pending.has(selected.id)} onChange={e => setRecordDraft(e.target.value)} placeholder="记录本次练习的内容、困难和进步…"/>
-        <div className="drawer-actions"><button className="subtle-button" disabled={pending.has(selected.id)} onClick={() => setRecordDraft(t => `${t}${t ? '\n\n' : ''}${new Date().toLocaleDateString('sv-SE')}\n`)}>追加今日记录</button><button className="primary-button" disabled={pending.has(selected.id) || recordDraft === recordExpected.text} onClick={() => void write(selected, recordField.id, recordExpected, {text: recordDraft, refs: []})}>{pending.has(selected.id) ? '正在保存…' : '保存记录'}</button></div></> : <p>请在连接与字段中选择文本记录属性，或直接打开原笔记继续记录。</p>}
-      <button className="original-note" onClick={() => void open(selected.id)}>在 RemNote 打开完整笔记 ↗</button>
+      {recordField ? <><label className="record-label" htmlFor="record-draft">{recordField.name}</label><textarea id="record-draft" rows={12} value={draft.text} disabled={pending.has(selected.id) || !draft.ready} onChange={e => updateDraft(e.target.value)} placeholder="记录本次练习的内容、困难和进步…"/>
+        <div className="drawer-actions"><button className="subtle-button" disabled={pending.has(selected.id) || !draft.ready} onClick={() => updateDraft(`${draft.text}${draft.text ? '\n\n' : ''}${new Date().toLocaleDateString('sv-SE')}\n`)}>追加今日记录</button></div></> : <p>请在连接与字段中选择文本记录属性，或直接打开原笔记继续记录。</p>}
+      <button className="original-note" disabled={pending.size > 0} onClick={() => void open(selected.id)}>在 RemNote 打开完整笔记 ↗</button>
     </aside></div>}
   </main>;
 }

@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom';
 import {Board} from './Board';
 import type {BoardPort, Snapshot, WriteRequest} from './model';
 import {sameCell} from './model';
+import {createDraftStore} from './drafts';
 import initial from './demo-config.json';
 import fixture from './demo-snapshot.json';
 import './board.css';
@@ -23,4 +24,8 @@ const port: BoardPort = {
   async open() {throw new Error('这是独立演示。正式插件会在 RemNote 打开对应的原笔记。');}
 };
 const start = new URLSearchParams(location.search).has('setup') ? {tagId:''} : initial;
-ReactDOM.render(<Board port={port} initial={start} preview/>, document.getElementById('root'));
+const drafts = createDraftStore({
+  get: async key => JSON.parse(sessionStorage.getItem(key) ?? 'null'),
+  set: async (key, value) => {if (value) sessionStorage.setItem(key, JSON.stringify(value)); else sessionStorage.removeItem(key);}
+});
+ReactDOM.render(<Board port={port} initial={start} draftStore={drafts} preview/>, document.getElementById('root'));
