@@ -3,7 +3,7 @@
   "id": "fanvane-database-board",
   "name": "数据库看板",
   "author": "Fanvane",
-  "description": "为 RemNote 高级表格提供 Notion 式表格与看板：保存视图、筛选、排序、拖动和编辑原笔记属性。",
+  "description": "在 RemNote 中享受 Notion 式数据库体验：表格与看板、多条件筛选、多属性排序、拖拽更新状态，以及原生笔记侧栏。",
   "version": {
     "major": 0,
     "minor": 3,
