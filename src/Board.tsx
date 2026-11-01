@@ -9,12 +9,17 @@ import {
   moveValue,
   placeRow,
   openBoardView,
+  NAME,
+  newId,
   type BoardOpening,
   type DatabaseViews,
 } from "./views";
 import { ViewToolbar, ViewPanel, type Panel } from "./ViewControls";
 import { Icon, fieldIcon } from "./Icons";
 import { PropertyCell } from "./PropertyCell";
+import { TableColumnHeader } from "./TableColumnHeader";
+
+type ColumnResize = { viewId: string; fieldId: string; width: number };
 
 interface Props {
   port: BoardPort;
@@ -75,6 +80,8 @@ export function Board({
   const [over, setOver] = useState("");
   const [dropBefore, setDropBefore] = useState("");
   const [selectedId, setSelectedId] = useState("");
+  const [columnResize, setColumnResize] = useState<ColumnResize>();
+  const columnResizeRef = useRef<ColumnResize>();
   const [scope, setScope] = useState(
     rowScope ? { tagId: initial.tagId, rowIds: rowScope } : undefined,
   );
@@ -463,7 +470,7 @@ export function Board({
     }
   };
   const changeViews = (state: DatabaseViews) => {
-    if (pendingRef.current.size || dragRef.current || creating) return;
+    if (pendingRef.current.size || dragRef.current || columnResizeRef.current || creating) return;
     void chooseConfig({ viewState: state });
   };
   const patchView = (patch: Partial<NonNullable<typeof activeView>>) => {
@@ -475,6 +482,42 @@ export function Board({
         ),
       });
   };
+  const tableWidth = (fieldId: string) =>
+    columnResize?.viewId === activeView?.id && columnResize?.fieldId === fieldId
+      ? columnResize.width
+      : activeView?.columnWidths[fieldId] ?? (fieldId === NAME ? 200 : 160);
+  const tableHeader = (fieldId: string, name: string, icon: string) => (
+    <TableColumnHeader key={`${activeView!.id}:${fieldId}`} name={name} icon={icon}
+      width={tableWidth(fieldId)}
+      disabled={loading || pending.size > 0 || creating || !!columnResize && columnResize.fieldId !== fieldId}
+      sortDirection={activeView!.sorts.find(sort => sort.fieldId === fieldId)?.direction}
+      onSort={direction => {
+        const sorts = activeView!.sorts;
+        patchView({ sorts: !direction ? sorts.filter(sort => sort.fieldId !== fieldId)
+          : sorts.some(sort => sort.fieldId === fieldId)
+            ? sorts.map(sort => sort.fieldId === fieldId ? { ...sort, direction } : sort)
+            : [...sorts, { id: newId(), fieldId, direction }] });
+      }}
+      onFilter={() => {
+        if (!activeView!.filters.some(filter => filter.fieldId === fieldId))
+          patchView({ filters: [...activeView!.filters, { id: newId(), fieldId, operator: "is", value: "" }] });
+        setPanel("filters");
+      }}
+      onHide={fieldId === NAME ? undefined : () => patchView({ visibleFieldIds: activeView!.visibleFieldIds.filter(id => id !== fieldId) })}
+      onPreviewWidth={width => {
+        const next = width === undefined ? undefined : { viewId: activeView!.id, fieldId, width };
+        columnResizeRef.current = next; setColumnResize(next);
+      }}
+      onCommitWidth={width => {
+        columnResizeRef.current = undefined; setColumnResize(undefined);
+        patchView({ columnWidths: { ...activeView!.columnWidths, [fieldId]: width } });
+      }}
+      onResetWidth={() => {
+        const next = { ...activeView!.columnWidths }; delete next[fieldId];
+        patchView({ columnWidths: next });
+      }}
+    />
+  );
   const create = async () => {
     if (!newRecord || !port.create || creating || pendingRef.current.size) return;
     ++sequence.current;
@@ -681,7 +724,7 @@ export function Board({
               onChange={changeViews}
               panel={panel}
               setPanel={setPanel}
-              disabled={pending.size > 0 || loading || creating}
+              disabled={pending.size > 0 || loading || creating || !!columnResize}
               search={search}
               setSearch={setSearch}
               onCreate={
@@ -794,18 +837,20 @@ export function Board({
                   <div
                     className={`table-scroll ${activeView.wrapCells ? "wrap-cells" : ""}`}
                   >
-                    <table>
+                    <table style={{ width: tableWidth(NAME) + shownFields.reduce((sum, field) => sum + tableWidth(field.id), 0) + 38 }}>
+                      <colgroup>
+                        <col style={{ width: tableWidth(NAME) }} />
+                        {shownFields.map(field => <col key={field.id} style={{ width: tableWidth(field.id) }} />)}
+                        <col style={{ width: 38 }} />
+                      </colgroup>
                       <thead>
                         <tr>
-                          <th className="name-column">
-                            <span className="type-icon">Aa</span>名称
+                          <th className="name-column" data-field-id={NAME}>
+                            {tableHeader(NAME, "名称", "name")}
                           </th>
                           {shownFields.map((f) => (
-                            <th key={f.id}>
-                              <button onClick={() => setPanel("properties")}>
-                                <Icon name={fieldIcon(f.type)} />
-                                {f.name}
-                              </button>
+                            <th key={f.id} data-field-id={f.id}>
+                              {tableHeader(f.id, f.name, fieldIcon(f.type))}
                             </th>
                           ))}
                           <th className="add-column">
@@ -898,7 +943,7 @@ export function Board({
                 onChange={changeViews}
                 panel={panel}
                 setPanel={setPanel}
-                disabled={pending.size > 0 || creating}
+                disabled={pending.size > 0 || creating || !!columnResize}
                 groups={allGroups}
                 connection={connection}
               />

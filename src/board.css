@@ -68,13 +68,22 @@ body { margin: 0; }
 .card-media { width:100%; min-width:0; max-height:180px; overflow:hidden; border-bottom:1px solid var(--line); background:var(--bg); cursor:pointer; }.card-media img { max-width:100%; height:auto; object-fit:contain; }.card-property .card-media { border:0; }
 .db-board .new-card { display:flex; align-items:center; gap:7px; text-align:left; min-height:35px; color:var(--muted); padding:5px 10px; border:1px solid transparent; border-radius:8px; }.color-columns .new-card { border-color:color-mix(in srgb,var(--tone-ink) 15%,transparent); color:var(--tone-ink); }
 .table-scroll { overflow:auto; flex:1; padding:0 32px 12px; min-height:150px; }
-.db-board table { border-collapse:collapse; border-spacing:0; table-layout:fixed; width:100%; min-width:700px; font-size:14px; text-align:left; }
-.db-board th { height:35px; font-weight:400; color:var(--muted); white-space:nowrap; border-bottom:1px solid var(--line); text-align:left; min-width:150px; padding:4px 8px; }
+.db-board table { border-collapse:collapse; border-spacing:0; table-layout:fixed; font-size:14px; text-align:left; }
+.db-board th { position:relative; height:35px; font-weight:400; color:var(--muted); white-space:nowrap; border-bottom:1px solid var(--line); border-right:1px solid var(--line); text-align:left; padding:0; }
 .db-board th button { display:flex; gap:7px; align-items:center; padding:0; color:var(--muted); }
-.db-board td { height:34px; border-right:1px solid var(--line); border-bottom:1px solid var(--line); padding:4px 8px; vertical-align:top; width:160px; max-width:300px; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; }
-.db-board th.name-column,.db-board td.name-column { min-width:180px; width:200px; }.type-icon { color:var(--muted); margin-right:8px; font-size:15px; }
+.db-board td { height:34px; border-right:1px solid var(--line); border-bottom:1px solid var(--line); padding:4px 8px; vertical-align:top; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; }
+.type-icon { color:var(--muted); font-size:15px; }
 .db-board td.name-column { position:relative; padding-right:26px; }.name-column .open-note { position:absolute; top:2px; right:1px; }
 .db-board td:last-child { border-right:0; }.db-board th.add-column { width:38px; min-width:38px; }
+.db-board .column-title { width:100%; min-width:0; height:35px; padding:5px 10px 5px 8px; border-radius:0; }
+.column-title-text { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }.column-sort-indicator { margin-left:auto; color:var(--blue); }
+.column-resizer { position:absolute; z-index:2; right:-5px; top:0; bottom:0; width:10px; cursor:col-resize; touch-action:none; user-select:none; }
+.column-resizer::after { content:""; position:absolute; left:4px; top:0; bottom:0; width:2px; background:transparent; }
+.column-resizer:hover::after,.column-resizer:focus-visible::after,.column-resizer.resizing::after { background:var(--blue); }.column-resizer[aria-disabled=true] { cursor:default; }
+.column-menu { position:fixed; z-index:25; width:240px; max-width:calc(100vw - 16px); max-height:calc(100dvh - 16px); overflow:auto; padding:5px; background:var(--panel); border:1px solid var(--line); border-radius:8px; box-shadow:var(--shadow); font-size:13px; }
+.column-menu-heading { padding:5px 8px 8px; color:var(--muted); font-size:12px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.db-board .column-menu>button { display:flex; align-items:center; gap:9px; width:100%; min-height:32px; padding:5px 8px; text-align:left; }.column-menu>button>span { flex:1; }.column-menu .db-icon { width:16px; height:16px; color:var(--muted); }.column-menu hr { margin:5px -5px; }
+.column-width-controls { display:flex; align-items:center; gap:5px; padding:4px 5px 2px 8px; color:var(--muted); }.column-width-controls>span { flex:1; }.column-width-controls output { min-width:34px; text-align:center; font-variant-numeric:tabular-nums; }.column-width-controls button { width:30px; height:30px; font-size:18px; }
 .db-board .table-name { display:flex; align-items:center; gap:7px; padding:0; font-weight:500; text-align:left; width:100%; height:26px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }.table-name .db-icon { color:var(--faint); width:16px; }
 .db-board .cell-text,.db-board .cell-readonly { padding:0; width:100%; min-height:25px; text-align:left; white-space:inherit; overflow:hidden; text-overflow:ellipsis; display:block; }.cell-empty { opacity:0; color:var(--faint); }td:hover .cell-empty,.detail-property .cell-empty { opacity:1; }
 .db-board .cell-input { width:100%; height:27px; padding:0 3px; border-color:var(--blue); border-radius:0; }
@@ -126,6 +135,7 @@ body { margin: 0; }
   .database-body { position:relative; }.database-panel { position:absolute; right:0; top:0; bottom:0; width:min(360px,100%); box-shadow:var(--shadow); z-index:20; }.database-panel input,.database-panel select,.connection input { font-size:16px!important; min-height:44px; }.setting-label { min-height:44px; }.settings-row { min-height:44px!important; }
   .board-scroll { padding:4px 10px 12px; }.column { width:260px; max-width:84vw; }.size-large .column { width:320px; }.group-menu { opacity:1; }.column-heading { gap:0; }.card-content { padding:10px 12px; }.card-top { min-height:44px; }.card-title { min-height:44px; }.grip { position:static; opacity:.5; min-width:44px; min-height:44px; display:inline-flex; align-items:center; justify-content:center; margin-left:-8px; }.card:hover .card-title { padding-left:0; }.open-note { opacity:.6; }.new-card { min-height:44px!important; }
   .table-scroll { padding:0 16px 12px; }.db-board td { height:44px; }.db-board .cell-text,.db-board .table-name { min-height:44px; }.cell-input,.select-cell select { font-size:16px!important; min-height:44px; }.database-footer { padding:6px 16px; }
+  .db-board .column-title { min-height:44px; }.column-resizer { width:20px; right:-10px; }.column-resizer::after { left:9px; }.db-board .column-menu>button,.column-width-controls button { min-height:44px; }.column-width-controls button { min-width:44px; }
   .has-open-record .database-workspace { visibility:hidden; }
   .detail-drawer { position:absolute; inset:0; width:100%; min-width:0; z-index:30; border-left:0; }.drawer-heading button { min-width:44px; min-height:44px; }
 }
