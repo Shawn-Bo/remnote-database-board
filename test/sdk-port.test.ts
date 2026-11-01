@@ -87,4 +87,37 @@ describe('public SDK property write adapter',()=>{
   it('rejects a second in-flight change to the same row',async()=>{const{port,request}=setup();const first=port.write(request);await expect(port.write(request)).rejects.toThrow('正在保存');await first;});
   it('opens original Rem through public SDK',async()=>{const{port,request,plugin}=setup();await port.open(request.rowId);expect(plugin.window.openRem.mock.calls[0][0]._id).toBe(request.rowId);});
   it('ignores unrelated image and hyperlink IDs',()=>{expect(references(['x',{i:'q',_id:'option'},{i:'img',_id:'image'},{i:'a',_id:'url'}])).toEqual(['option']);});
+  it('edits an arbitrary native single-select, not only the legacy proficiency field',async()=>{
+    const {port,request,data,writes}=setup();const field=data.fields[3];
+    request.fieldId=field.id;request.expected=data.rows[0].cells[field.id];request.value={text:field.choices[1].name,refs:[field.choices[1].id]};
+    const saved=await port.write(request);expect(saved.cells[field.id]).toEqual(request.value);
+    expect(saved.cells[request.config.groupFieldId]).toEqual(data.rows[0].cells[request.config.groupFieldId]);expect(writes).toHaveLength(1);
+  });
+  it('refuses malformed numbers and writes valid values without changing other properties',async()=>{
+    const {port,request,data,writes,nodes}=setup();const field={id:'amount',name:'数量',type:'number',choices:[]};data.fields.push(field);
+    nodes.set(field.id,{_id:field.id,text:[field.name],isProperty:async()=>true,getPropertyType:async()=>field.type,getChildrenRem:async()=>[]});
+    request.fieldId=field.id;request.expected={text:'',refs:[]};request.value={text:'not a number',refs:[]};
+    await expect(port.write(request)).rejects.toThrow('有效数字');expect(writes).toHaveLength(0);
+    request.value={text:'0',refs:[]};expect((await port.write(request)).cells[field.id]).toEqual(request.value);expect(writes).toHaveLength(1);
+  });
+  it('creates a real tagged Rem, sets initial properties, and reads identity back',async()=>{
+    const {port,plugin,nodes,data}=setup();const tag=nodes.get(data.tagId);const values:Record<string,any>={};
+    const fresh:any={_id:'new-row',text:[],parent:null,getTagRems:async()=>[tag],setText:async(raw:any)=>{fresh.text=raw;},setParent:async(id:string)=>{fresh.parent=id;},addTag:vi.fn(async()=>{}),getTagPropertyValue:async(id:string)=>values[id],setTagPropertyValue:async(id:string,raw:any)=>{values[id]=raw;}};
+    plugin.rem.createRem=vi.fn(async()=>{nodes.set(fresh._id,fresh);return fresh;});
+    const choice=data.fields[0].choices[1];
+    const result=await port.create(data.tagId,'新记录',{[data.fields[0].id]:{text:choice.name,refs:[choice.id]}});
+    expect(result).toMatchObject({id:'new-row',name:'新记录',parentId:data.tagId});expect(fresh.addTag).toHaveBeenCalledWith(data.tagId);expect(result.cells[data.fields[0].id].refs).toEqual([choice.id]);
+  });
+  it('validates create properties before creating any Rem',async()=>{
+    const {port,plugin,data}=setup();plugin.rem.createRem=vi.fn();
+    await expect(port.create(data.tagId,'bad',{'gone':{text:'x',refs:[]}})).rejects.toThrow('属性已改变');expect(plugin.rem.createRem).not.toHaveBeenCalled();
+  });
+  it('opens an empty native tag but never converts an ordinary document into a database',async()=>{
+    const {port,plugin,nodes,data}=setup();const tag=nodes.get(data.tagId);
+    tag.getChildrenRem=async()=>[];tag.taggedRem=async()=>[];tag.hasPowerup=async()=>true;
+    expect((await port.load(data.tagId)).rows).toEqual([]);
+    tag.hasPowerup=async()=>false;plugin.rem.createRem=vi.fn();
+    await expect(port.create(data.tagId,'no implicit tag')).rejects.toThrow('不是现有表格或标签');
+    expect(plugin.rem.createRem).not.toHaveBeenCalled();
+  });
 });

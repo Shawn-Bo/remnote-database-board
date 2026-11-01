@@ -3,11 +3,11 @@
   "id": "fanvane-database-board",
   "name": "数据库看板",
   "author": "Fanvane",
-  "description": "按单选属性展示数据库看板，拖动写回真实属性，保留原分段与训练记录。",
+  "description": "为 RemNote 高级表格提供 Notion 式表格与看板：保存视图、筛选、排序、拖动和编辑原笔记属性。",
   "version": {
     "major": 0,
-    "minor": 2,
-    "patch": 3
+    "minor": 3,
+    "patch": 0
   },
   "repoUrl": "https://github.com/Shawn-Bo/remnote-database-board",
   "unlisted": true,
