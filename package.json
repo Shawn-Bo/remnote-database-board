@@ -1,6 +1,6 @@
 {
   "name": "fanvane-remnote-database-board",
-  "version": "0.3.6",
+  "version": "0.3.7",
   "private": true,
   "license": "MIT",
   "scripts": {
@@ -10,7 +10,9 @@
     "test:browser": "node scripts/test-browser.cjs",
     "test:mobile": "node scripts/test-mobile.cjs",
     "test:touch": "node scripts/test-touch.cjs",
-    "serve": "node scripts/serve.cjs"
+    "serve": "node scripts/serve.cjs",
+    "test:desktop": "node --test desktop/test-*.cjs",
+    "package:desktop": "node scripts/package-desktop.cjs"
   },
   "dependencies": {
     "@remnote/plugin-sdk": "0.0.46",

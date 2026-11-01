@@ -1,8 +1,16 @@
 # Notion-Style Database Experience: Validation Record
 
-Prior validated release: 0.3.5 (2026-11-01) on RemNote 1.29.1. Current release: 0.3.6 (2026-11-01).
+Prior validated release: 0.3.5 (2026-11-01) on RemNote 1.29.1. Current release: 0.3.7 (2026-11-01).
 
 Modeled on [Notion Views, Filters, and Sorts](https://www.notion.com/help/views-filters-and-sorts), [Boards](https://www.notion.com/help/boards), and [Tables](https://www.notion.com/help/tables), implementing **Table** and **Board** layouts, per-view configuration, direct property editing, and the native note sidebar.
+
+## 0.3.7 Desktop Updates
+
+- Typechecking, 91 plugin tests, and 23 desktop tests pass.
+- Tests cover update integrity, offline operation, restart persistence, rejected downgrades, cache cleanup, and installation rollback.
+- The generated deployment ZIP was extracted with macOS `ditto`; both `.command` launchers retain mode `0755` and execute successfully.
+- Installed the real extracted bundle, verified all 15 served file digests, and confirmed the old runtime was removed.
+- Static plugin updates switch the active in-memory snapshot while keeping the serving process running. The runtime checks at startup and hourly.
 
 ## 0.3.6 Localization Scope
 

@@ -9,6 +9,8 @@ npm ci
 npm run typecheck
 npm test
 npm run build
+npm run test:desktop
+npm run package:desktop
 npm run serve
 ```
 
@@ -34,7 +36,7 @@ Open `http://localhost:8083/preview.html`. The `test:browser`, `test:mobile`, an
 - **Property editing**: Single-select, plain text, number, and URL properties are editable directly in the table. Rich text, multi-select, date, and other property types are edited via the native note sidebar. Writes validate the target record, property, option, and prior value before saving, followed by a read-back check.
 - **New records**: Clicking **New** creates a Rem under the database tag, pre-fills properties from supported equality filters and the target board column, and opens its native note. If a multi-step creation partially fails, the created Rem ID is returned for recovery.
 - **Native content**: The sidebar renders full notes through the SDK `DocumentViewer`, delegating save and sync to RemNote. Images render as native RichText; parameter stripping used for plain-text extraction only runs on temporary clones.
-- **Permissions & networking**: Uses the public SDK with `All / ReadCreateModify` permissions. Note content is handled by RemNote, while the local server serves static plugin assets on `127.0.0.1:8081`.
+- **Permissions & networking**: Uses the public SDK with `All / ReadCreateModify` permissions. Note content is handled by RemNote, while the local server serves static plugin assets on `127.0.0.1:8081`. The desktop updater requests release metadata and static plugin assets from this project’s GitHub Releases.
 
 Concurrent edits use prior-value checks and read-back verification; multi-step SDK write atomicity and server sync depend on the host client.
 
@@ -54,4 +56,8 @@ Concurrent edits use prior-value checks and read-back verification; multi-step S
 
 The deployment bundle includes prebuilt plugin assets and launcher scripts. Run `Install-Mac.command` on macOS or `Start-Windows.cmd` on Windows, then load the plugin via RemNote's localhost development entry.
 
-The macOS installer stops any previous service, starts and verifies the new build, cleans up older runtime directories created by this plugin, and rolls back to the previous service if startup fails. Health status is served at `http://localhost:8081/__board_health`.
+The macOS installer stops any previous service, starts and verifies the new build, cleans up older runtime directories created by this plugin, and rolls back to the previous service if startup fails. Health status is served at `http://localhost:8081/__board_health`, including the active plugin version, bundled runtime version, and update status.
+
+The service checks the latest stable GitHub release at startup and hourly. It verifies the GitHub asset SHA-256, each plugin file digest, and manifest identity before atomically selecting an update. Requests use an in-memory snapshot, and the service keeps the same PID during updates. A failed download keeps the active version; reopening the board or refreshing RemNote loads the new interface. The update channel changes static plugin assets; the desktop service itself is installed from the bundle.
+
+Run `npm run package:desktop` to create both `RemNote-Board-DesktopBundle.zip` and `RemNote-Board-Update.json` in `../releases/`. Publish **both files** to the matching GitHub Release. The packager normalizes script permissions and verifies executability after extracting the generated ZIP. Desktop source and tests live in `desktop/`.

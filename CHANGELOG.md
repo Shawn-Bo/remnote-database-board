@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.3.7 · 2026-11-01
+
+- **Automatic desktop updates**: Check GitHub Releases on startup and hourly, verify downloads, switch to the new plugin, and remove older update caches.
+- **Mac installer permissions**: Preserve executable permissions in the deployment ZIP and verify them after extraction.
+
 ## 0.3.6 · 2026-11-01
 
 - **English default & language setting**: Added English as the default UI and demo data language, with an English / Simplified Chinese preference in **RemNote Settings > Plugin Settings > Database Board > Language**.
