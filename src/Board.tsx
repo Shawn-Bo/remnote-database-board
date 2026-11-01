@@ -476,7 +476,7 @@ export function Board({
       });
   };
   const create = async () => {
-    if (!newRecord || !port.create || creating) return;
+    if (!newRecord || !port.create || creating || pendingRef.current.size) return;
     ++sequence.current;
     pendingRef.current.add("__create__");
     setPending(new Set(pendingRef.current));
@@ -509,7 +509,9 @@ export function Board({
         s ? { ...s, rows: [...s.rows.filter((r) => r.id !== row.id), row] } : s,
       );
       setNewRecord(undefined);
-      selectRow(row);
+      // The create request still owns the pending guard. Its confirmed result
+      // can be opened directly; user-driven selection remains guarded.
+      setSelectedId(row.id);
       setNotice(preview ? "已创建演示记录" : "已创建记录");
     } catch (e) {
       setError(message(e));

@@ -26,6 +26,7 @@ export function PropertyCell({
   const [value, setValue] = useState("");
   const base = useRef(cell),
     saving = useRef(false);
+  const composing = useRef(false);
   if (cell.richText)
     return (
       <div className="rich-cell" onDoubleClick={onOpen}>
@@ -88,8 +89,13 @@ export function PropertyCell({
         value={value}
         disabled={disabled}
         onChange={(e) => setValue(e.target.value)}
+        onCompositionStart={() => { composing.current = true; }}
+        onCompositionEnd={() => { composing.current = false; }}
         onBlur={() => void save()}
         onKeyDown={(e) => {
+          // Enter/Escape can belong to the input method's candidate picker.
+          // WebKit may report the final confirmation as keyCode 229.
+          if (composing.current || e.nativeEvent.isComposing || e.keyCode === 229) return;
           if (e.key === "Enter") {
             e.preventDefault();
             void save();
