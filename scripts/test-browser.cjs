@@ -22,8 +22,11 @@ async function main() {
   try {
     await page.goto(process.env.BOARD_TEST_URL || 'http://localhost:8083/preview.html');
     await page.waitForSelector('.card');
-    assert.equal(await page.locator('.card').count(),9);
-    assert.equal(await page.locator('.column').count(),9);
+    assert.equal(await page.locator('.card').count(),fixture.rows.length);
+    // Every configured option has a column, plus the explicit unassigned group.
+    const groupField = fixture.fields.find(field => field.id === config.groupFieldId);
+    assert.ok(groupField, 'the fixture must contain its configured group property');
+    assert.equal(await page.locator('.column').count(),groupField.choices.length + 1);
     await page.screenshot({path:path.join(output,'preview-initial.png')});
     const rowId = fixture.rows[0].id, target = fixture.fields[1].choices[1].id;
     const origin = await page.locator(`[data-row-id="${rowId}"] .grip`).boundingBox();
@@ -70,7 +73,7 @@ async function main() {
     assert.deepEqual(await page.locator('tbody tr').evaluateAll(rows => rows.map(r => r.dataset.rowId)),expected);
     checks.push('Per-view filter and descending sort survive reload');
     await page.getByRole('tab',{name:'看板',exact:true}).click();
-    assert.equal(await page.locator('.card').count(),9);
+    assert.equal(await page.locator('.card').count(),fixture.rows.length);
     assert.match(await page.locator(`[data-row-id="${rowId}"] .card-preview`).innerText(),/示例练习记录/);
     await page.locator(`[data-row-id="${rowId}"] .card-title`).click();
     assert.equal(await page.getByRole('button',{name:'在 RemNote 打开完整笔记',exact:true}).count(),2);
