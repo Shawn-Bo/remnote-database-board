@@ -1,13 +1,13 @@
 {
   "manifestVersion": 1,
   "id": "fanvane-database-board",
-  "name": "数据库看板",
+  "name": "Database Board",
   "author": "Fanvane",
-  "description": "在 RemNote 中享受 Notion 式数据库体验：表格与看板、多条件筛选、多属性排序、拖拽更新状态，以及原生笔记侧栏。",
+  "description": "The Notion-style database experience, inside RemNote. Tables, Kanban boards, saved views, filters, sorting, and native note editing.",
   "version": {
     "major": 0,
     "minor": 3,
-    "patch": 5
+    "patch": 6
   },
   "repoUrl": "https://github.com/Shawn-Bo/remnote-database-board",
   "unlisted": true,

@@ -1,3 +1,4 @@
+import { t } from "./i18n";
 import { AppEvents, type RNPlugin } from "@remnote/plugin-sdk";
 import { newId } from "./views";
 
@@ -29,7 +30,10 @@ export function registerNativeClip(
         done(data.error ? new Error(data.error) : undefined);
     };
     const timer = setTimeout(
-      () => done(new Error("图片显示服务未响应，请重新加载插件。")),
+      () =>
+        done(
+          new Error(t("Image viewer is not responding. Reload the plugin.")),
+        ),
       10000,
     );
     plugin.event.addListener(AppEvents.MessageBroadcast, undefined, receive);

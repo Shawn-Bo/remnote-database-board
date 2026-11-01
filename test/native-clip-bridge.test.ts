@@ -76,7 +76,9 @@ it("ignores unrelated messages and reports a missing index widget", async () => 
   try {
     const { popup, listeners } = peers();
     const pending = registerNativeClip(popup, "fanvane-db-rich-test", "");
-    const failed = expect(pending).rejects.toThrow("图片显示服务未响应");
+    const failed = expect(pending).rejects.toThrow(
+      "Image viewer is not responding",
+    );
     await popup.messaging.broadcast({ type: "unrelated" });
     await vi.advanceTimersByTimeAsync(10000);
     await failed;

@@ -27,11 +27,15 @@ it("clips a native embed to the intersection of nested viewports without hiding 
 });
 
 it("cuts an overlapping column menu out of the native image while retaining its uncovered area", () => {
-  const box = {top:0,left:0,right:300,bottom:200};
-  expect(clipInsets(box, [], [{top:20,left:100,right:200,bottom:80}])).toBe(
+  const box = { top: 0, left: 0, right: 300, bottom: 200 };
+  expect(
+    clipInsets(box, [], [{ top: 20, left: 100, right: 200, bottom: 80 }]),
+  ).toBe(
     "polygon(evenodd, 0px 0px, 300px 0px, 300px 200px, 0px 200px, 0px 0px, 100px 20px, 200px 20px, 200px 80px, 100px 80px, 100px 20px, 0px 0px)",
   );
-  expect(clipInsets(box, [], [{top:0,left:400,right:600,bottom:100}])).toBe("inset(0px 0px 0px 0px)");
+  expect(
+    clipInsets(box, [], [{ top: 0, left: 400, right: 600, bottom: 100 }]),
+  ).toBe("inset(0px 0px 0px 0px)");
 });
 
 it("clips cards beside the native page, and hides them only for a modal or covered mobile workspace", () => {

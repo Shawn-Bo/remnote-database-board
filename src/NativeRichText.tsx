@@ -1,3 +1,4 @@
+import { t } from "./i18n";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   RichText,
@@ -15,7 +16,11 @@ type Bounds = Pick<DOMRect, "top" | "right" | "bottom" | "left">;
  * only the visible rectangle through the public CSS API; retain the original
  * RichText and RemNote's file loading, image zoom, and reference handling.
  */
-export function clipInsets(box: Bounds, clips: Bounds[], occlusions: Bounds[] = []): string {
+export function clipInsets(
+  box: Bounds,
+  clips: Bounds[],
+  occlusions: Bounds[] = [],
+): string {
   const visible = clips.reduce(
     (a, b) => ({
       top: Math.max(a.top, b.top),
@@ -27,18 +32,29 @@ export function clipInsets(box: Bounds, clips: Bounds[], occlusions: Bounds[] = 
   );
   if (visible.right <= visible.left || visible.bottom <= visible.top)
     return "inset(100%)";
-  const holes = occlusions.map(other => ({
-    left: Math.max(visible.left, other.left), right: Math.min(visible.right, other.right),
-    top: Math.max(visible.top, other.top), bottom: Math.min(visible.bottom, other.bottom),
-  })).filter(other => other.left < other.right && other.top < other.bottom);
+  const holes = occlusions
+    .map((other) => ({
+      left: Math.max(visible.left, other.left),
+      right: Math.min(visible.right, other.right),
+      top: Math.max(visible.top, other.top),
+      bottom: Math.min(visible.bottom, other.bottom),
+    }))
+    .filter((other) => other.left < other.right && other.top < other.bottom);
   if (holes.length) {
     // Native embeds sit above the iframe. Cut out only the area covered by an
     // open column menu, keeping the rest of the original image visible.
     const rectangle = (rect: Bounds) => [
-      [rect.left, rect.top], [rect.right, rect.top], [rect.right, rect.bottom],
-      [rect.left, rect.bottom], [rect.left, rect.top],
+      [rect.left, rect.top],
+      [rect.right, rect.top],
+      [rect.right, rect.bottom],
+      [rect.left, rect.bottom],
+      [rect.left, rect.top],
     ];
-    const points = [...rectangle(visible), ...holes.flatMap(rectangle), [visible.left, visible.top]];
+    const points = [
+      ...rectangle(visible),
+      ...holes.flatMap(rectangle),
+      [visible.left, visible.top],
+    ];
     return `polygon(evenodd, ${points.map(([x, y]) => `${Math.round(x - box.left)}px ${Math.round(y - box.top)}px`).join(", ")})`;
   }
   return `inset(${[
@@ -206,7 +222,10 @@ export function NativeRichTextProvider({
         if (active) setReady(true);
       })
       .catch(() => {
-        if (active) setError("图片显示区域初始化失败，请关闭后重新打开视图。");
+        if (active)
+          setError(
+            t("Failed to load image viewer. Close and reopen the view."),
+          );
       });
     return () => {
       active = false;
@@ -251,11 +270,7 @@ export function NativeRichText({
 export function NativeNote({ remId }: { remId: string }) {
   return (
     <div className="native-note-editor">
-      <DocumentViewer
-        documentId={remId}
-        width="100%"
-        height="100%"
-      />
+      <DocumentViewer documentId={remId} width="100%" height="100%" />
     </div>
   );
 }

@@ -1,10 +1,14 @@
-# 更新记录
+# Changelog
+
+## 0.3.6 · 2026-11-01
+
+- **English default & language setting**: Added English as the default UI and demo data language, with an English / Simplified Chinese preference in **RemNote Settings > Plugin Settings > Database Board > Language**.
 
 ## 0.3.5 · 2026-11-01
 
-- **表格与看板多视图**：独立保存筛选、排序、分组、显示属性和列宽。
-- **拖拽与查询**：跨列拖拽更新分组属性，支持多条件筛选、多属性排序和手动卡片排序。
-- **表格列菜单**：点击列名筛选、排序或隐藏属性，拖拽边界调整宽度。
-- **空值留白**：空单元格直接留白，点击即可选择或填写。
-- **原生笔记侧栏**：点击记录打开完整原生页面，边看数据库边编辑正文、标签、属性与图片。
-- **快捷入口**：从高级表格标题或属性列菜单打开看板，新建记录后直接进入原生笔记。
+- **Table and Board views**: Save independent filters, sorts, grouping, visible properties, and column widths per view.
+- **Drag-and-drop & queries**: Drag cards across columns to update grouping properties, with multi-condition filters, multi-property sorts, and manual card ordering.
+- **Table column menus**: Click column headers to filter, sort, or hide properties, and drag column borders to resize.
+- **Clean blank cells**: Leave empty cells blank until clicked to select an option or enter text.
+- **Native note sidebar**: Click any record to open the full native note and edit body content, tags, properties, and images alongside the database.
+- **Quick entry points**: Open a board from the Advanced Table header or property column menu, and jump straight into the native note when creating a record with **New**.

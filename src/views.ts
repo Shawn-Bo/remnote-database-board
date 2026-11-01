@@ -1,11 +1,12 @@
+import { t, translate } from "./i18n";
 import { emptyCell, groupKey, normalize, EMPTY, UNKNOWN } from "./model";
 import type { Cell, Config, Field, Row, Snapshot } from "./model";
 
 export const NAME = "__name__";
 export type Layout = "table" | "board";
 export const LAYOUTS: { id: Layout; name: string }[] = [
-  { id: "table", name: "表格" },
-  { id: "board", name: "看板" },
+  { id: "table", name: "Table" },
+  { id: "board", name: "Board" },
 ];
 export type Operator =
   | "is"
@@ -32,6 +33,7 @@ export interface SortRule {
 export interface DatabaseView {
   id: string;
   name: string;
+  autoName?: boolean;
   layout: Layout;
   groupFieldId: string;
   visibleFieldIds: string[];
@@ -48,6 +50,9 @@ export interface DatabaseView {
   wrapCells: boolean;
   rowOrder?: string[];
 }
+export const viewName = (view: DatabaseView) =>
+  view.autoName ? t(view.layout === "table" ? "Table" : "Board") : view.name;
+
 export interface DatabaseViews {
   version: 1;
   activeViewId: string;
@@ -69,6 +74,7 @@ export function newView(
   return {
     id: newId(),
     name: name || LAYOUTS.find((v) => v.id === layout)!.name,
+    autoName: !name,
     layout,
     groupFieldId: layout === "board" ? config.groupFieldId : "",
     visibleFieldIds:
@@ -128,19 +134,26 @@ export function openBoardView(
   const boards = state.views.filter((view) => view.layout === "board");
   const active = boards.find((view) => view.id === state.activeViewId);
   const existing = group
-    ? (active?.groupFieldId === group.id ? active : undefined) ??
+    ? ((active?.groupFieldId === group.id ? active : undefined) ??
       boards.find((view) => view.groupFieldId === group.id) ??
-      active ?? boards[0]
-    : active ?? boards[0];
+      active ??
+      boards[0])
+    : (active ?? boards[0]);
   const board = existing ?? newView("board", snapshot, config);
-  const opened = group && board.groupFieldId !== group.id
-    ? { ...board, groupFieldId: group.id, hiddenGroups: [], collapsedGroups: [] }
-    : board;
+  const opened =
+    group && board.groupFieldId !== group.id
+      ? {
+          ...board,
+          groupFieldId: group.id,
+          hiddenGroups: [],
+          collapsedGroups: [],
+        }
+      : board;
   return {
     ...state,
     activeViewId: opened.id,
     views: existing
-      ? state.views.map((view) => view.id === opened.id ? opened : view)
+      ? state.views.map((view) => (view.id === opened.id ? opened : view))
       : [...state.views, opened],
   };
 }
@@ -162,6 +175,7 @@ export function readViews(value: unknown): DatabaseViews | undefined {
       ids.has(view.id) ||
       !view.id ||
       typeof view.name !== "string" ||
+      (view.autoName !== undefined && typeof view.autoName !== "boolean") ||
       !LAYOUTS.some((l) => l.id === view.layout) ||
       typeof view.groupFieldId !== "string" ||
       !stringList(view.visibleFieldIds) ||
@@ -222,6 +236,15 @@ export function readViews(value: unknown): DatabaseViews | undefined {
   }
   return {
     ...state,
+    views: state.views.map((view) => {
+      const label = view.layout === "table" ? "Table" : "Board";
+      return {
+        ...view,
+        autoName:
+          view.autoName ??
+          (view.name === label || view.name === translate("zh-CN", label)),
+      };
+    }),
     activeViewId: ids.has(state.activeViewId)
       ? state.activeViewId
       : state.views[0].id,
@@ -349,16 +372,21 @@ export interface RowGroup {
   choiceIndex: number;
 }
 export function viewGroups(rows: Row[], field?: Field): RowGroup[] {
-  if (!field) return [{ id: EMPTY, name: "全部", rows, choiceIndex: -1 }];
+  if (!field) return [{ id: EMPTY, name: t("All"), rows, choiceIndex: -1 }];
   if (field.type === "single_select") {
     const groups: RowGroup[] = [
-      { id: EMPTY, name: `无${field.name}`, rows: [], choiceIndex: -1 },
+      {
+        id: EMPTY,
+        name: t("No {p0}", { p0: field.name }),
+        rows: [],
+        choiceIndex: -1,
+      },
       ...field.choices.map((c, i) => ({
         ...c,
         rows: [] as Row[],
         choiceIndex: i,
       })),
-      { id: UNKNOWN, name: "未识别的原值", rows: [], choiceIndex: -1 },
+      { id: UNKNOWN, name: t("Unrecognized value"), rows: [], choiceIndex: -1 },
     ];
     const byId = new Map(groups.map((g) => [g.id, g]));
     rows.forEach((r) =>
@@ -373,7 +401,7 @@ export function viewGroups(rows: Row[], field?: Field): RowGroup[] {
     if (!groups.has(id))
       groups.set(id, {
         id,
-        name: text || `无${field.name}`,
+        name: text || t("No {p0}", { p0: field.name }),
         rows: [],
         choiceIndex: groups.size,
       });
@@ -385,7 +413,8 @@ export function moveValue(target: string, field: Field): Cell {
   if (target === EMPTY) return emptyCell();
   if (field.type === "single_select") {
     const choice = field.choices.find((c) => c.id === target);
-    if (!choice) throw new Error("目标选项已被删除，请刷新。");
+    if (!choice)
+      throw new Error(t("Target option was deleted. Refresh the view."));
     return { text: choice.name, refs: [choice.id] };
   }
   if (
@@ -393,5 +422,7 @@ export function moveValue(target: string, field: Field): Cell {
     target.startsWith("text:")
   )
     return { text: target.slice(5), refs: [] };
-  throw new Error("此属性暂不能通过拖动修改，请打开记录编辑。");
+  throw new Error(
+    t("This property can't be changed by dragging. Open the record to edit."),
+  );
 }

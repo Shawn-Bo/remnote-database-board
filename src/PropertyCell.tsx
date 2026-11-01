@@ -1,3 +1,4 @@
+import { t } from "./i18n";
 import React, { useRef, useState } from "react";
 import type { Cell, Field } from "./model";
 import { EMPTY, UNKNOWN, cellForChoice, groupKey } from "./model";
@@ -37,7 +38,9 @@ export function PropertyCell({
     const key = groupKey(cell, field),
       index = field.choices.findIndex((c) => c.id === key);
     return (
-      <span className={`select-cell tone-${index < 0 ? 0 : (index % 8) + 1}${key === EMPTY ? " is-empty" : ""}`}>
+      <span
+        className={`select-cell tone-${index < 0 ? 0 : (index % 8) + 1}${key === EMPTY ? " is-empty" : ""}`}
+      >
         <select
           aria-label={field.name}
           disabled={disabled}
@@ -46,7 +49,9 @@ export function PropertyCell({
             void onSave(cell, cellForChoice(e.target.value, field))
           }
         >
-          <option value={EMPTY} aria-label="清除选择">{key === EMPTY ? "" : "清除选择"}</option>
+          <option value={EMPTY} aria-label={t("Clear selection")}>
+            {key === EMPTY ? "" : t("Clear selection")}
+          </option>
           {field.choices.map((c) => (
             <option key={c.id} value={c.id}>
               {c.name}
@@ -54,7 +59,7 @@ export function PropertyCell({
           ))}
           {key === UNKNOWN && (
             <option value={UNKNOWN} disabled>
-              {cell.text || "未识别的原值"}
+              {cell.text || t("Unrecognized value")}
             </option>
           )}
         </select>
@@ -63,8 +68,12 @@ export function PropertyCell({
   }
   if (!["text", "0", "number", "url"].includes(field.type) || cell.refs.length)
     return (
-      <button className="cell-readonly" onClick={onOpen} title="在原笔记中编辑"
-        aria-label={`在原笔记中编辑${field.name}`}>
+      <button
+        className="cell-readonly"
+        onClick={onOpen}
+        title={t("Edit in RemNote")}
+        aria-label={t("Edit {p0} in RemNote", { p0: field.name })}
+      >
         {cell.text}
       </button>
     );
@@ -86,17 +95,26 @@ export function PropertyCell({
       <input
         className="cell-input"
         autoFocus
-        aria-label={`编辑${field.name}`}
+        aria-label={t("Edit {p0}", { p0: field.name })}
         value={value}
         disabled={disabled}
         onChange={(e) => setValue(e.target.value)}
-        onCompositionStart={() => { composing.current = true; }}
-        onCompositionEnd={() => { composing.current = false; }}
+        onCompositionStart={() => {
+          composing.current = true;
+        }}
+        onCompositionEnd={() => {
+          composing.current = false;
+        }}
         onBlur={() => void save()}
         onKeyDown={(e) => {
           // Enter/Escape can belong to the input method's candidate picker.
           // WebKit may report the final confirmation as keyCode 229.
-          if (composing.current || e.nativeEvent.isComposing || e.keyCode === 229) return;
+          if (
+            composing.current ||
+            e.nativeEvent.isComposing ||
+            e.keyCode === 229
+          )
+            return;
           if (e.key === "Enter") {
             e.preventDefault();
             void save();
@@ -112,7 +130,7 @@ export function PropertyCell({
     <button
       className="cell-text"
       disabled={disabled}
-      aria-label={`编辑${field.name}`}
+      aria-label={t("Edit {p0}", { p0: field.name })}
       onClick={() => {
         base.current = cell;
         setValue(cell.text);

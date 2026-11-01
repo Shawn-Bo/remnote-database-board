@@ -1,3 +1,5 @@
+import { t } from "./i18n";
+import { useLanguage } from "./use-language";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import type { BoardPort, Cell, Config, Row, Snapshot } from "./model";
 import { UNKNOWN, emptyCell, inferConfig, parseRemId, sameCell } from "./model";
@@ -50,6 +52,7 @@ export function Board({
   preview,
   renderRichCell,
 }: Props) {
+  const language = useLanguage();
   const [snapshot, setSnapshot] = useState<Snapshot>();
   const [config, setConfig] = useState<Config>({
     tagId: initial.tagId,
@@ -116,7 +119,9 @@ export function Board({
           return true;
         } catch (e) {
           if (seq === configSaveSequence.current)
-            setViewError(`视图设置尚未保存：${message(e)}`);
+            setViewError(
+              t("View settings not saved: {p0}", { p0: message(e) }),
+            );
           return false;
         } finally {
           if (seq === configSaveSequence.current) setViewSaving(false);
@@ -128,7 +133,12 @@ export function Board({
     [onConfig],
   );
   const connect = useCallback(
-    async (input: string, prior?: Partial<Config>, allRows = false, entry?: BoardOpening) => {
+    async (
+      input: string,
+      prior?: Partial<Config>,
+      allRows = false,
+      entry?: BoardOpening,
+    ) => {
       if (pendingRef.current.size || loadingRef.current || dragRef.current)
         return;
       const seq = ++sequence.current;
@@ -201,7 +211,8 @@ export function Board({
   }, [port]);
 
   useEffect(() => {
-    if (initial.tagId) void connect(initial.tagId, initial, false, openingBoard);
+    if (initial.tagId)
+      void connect(initial.tagId, initial, false, openingBoard);
   }, [connect, initial, openingBoard]);
   useEffect(() => {
     const tick = () => {
@@ -250,10 +261,10 @@ export function Board({
           : s,
       );
       const subject =
-        snapshot?.fields.find((f) => f.id === fieldId)?.name ?? "属性";
+        snapshot?.fields.find((f) => f.id === fieldId)?.name ?? t("Property");
       const text = preview
-        ? `演示${subject}已更新（不写入 RemNote）`
-        : `${subject}已保存`;
+        ? t("{p0} updated", { p0: subject })
+        : t("{p0} saved", { p0: subject });
       setNotice(text);
       return true;
     } catch (e) {
@@ -470,7 +481,13 @@ export function Board({
     }
   };
   const changeViews = (state: DatabaseViews) => {
-    if (pendingRef.current.size || dragRef.current || columnResizeRef.current || creating) return;
+    if (
+      pendingRef.current.size ||
+      dragRef.current ||
+      columnResizeRef.current ||
+      creating
+    )
+      return;
     void chooseConfig({ viewState: state });
   };
   const patchView = (patch: Partial<NonNullable<typeof activeView>>) => {
@@ -485,41 +502,79 @@ export function Board({
   const tableWidth = (fieldId: string) =>
     columnResize?.viewId === activeView?.id && columnResize?.fieldId === fieldId
       ? columnResize.width
-      : activeView?.columnWidths[fieldId] ?? (fieldId === NAME ? 200 : 160);
+      : (activeView?.columnWidths[fieldId] ?? (fieldId === NAME ? 200 : 160));
   const tableHeader = (fieldId: string, name: string, icon: string) => (
-    <TableColumnHeader key={`${activeView!.id}:${fieldId}`} name={name} icon={icon}
+    <TableColumnHeader
+      key={`${activeView!.id}:${fieldId}`}
+      name={name}
+      icon={icon}
       width={tableWidth(fieldId)}
-      disabled={loading || pending.size > 0 || creating || !!columnResize && columnResize.fieldId !== fieldId}
-      sortDirection={activeView!.sorts.find(sort => sort.fieldId === fieldId)?.direction}
-      onSort={direction => {
+      disabled={
+        loading ||
+        pending.size > 0 ||
+        creating ||
+        (!!columnResize && columnResize.fieldId !== fieldId)
+      }
+      sortDirection={
+        activeView!.sorts.find((sort) => sort.fieldId === fieldId)?.direction
+      }
+      onSort={(direction) => {
         const sorts = activeView!.sorts;
-        patchView({ sorts: !direction ? sorts.filter(sort => sort.fieldId !== fieldId)
-          : sorts.some(sort => sort.fieldId === fieldId)
-            ? sorts.map(sort => sort.fieldId === fieldId ? { ...sort, direction } : sort)
-            : [...sorts, { id: newId(), fieldId, direction }] });
+        patchView({
+          sorts: !direction
+            ? sorts.filter((sort) => sort.fieldId !== fieldId)
+            : sorts.some((sort) => sort.fieldId === fieldId)
+              ? sorts.map((sort) =>
+                  sort.fieldId === fieldId ? { ...sort, direction } : sort,
+                )
+              : [...sorts, { id: newId(), fieldId, direction }],
+        });
       }}
       onFilter={() => {
-        if (!activeView!.filters.some(filter => filter.fieldId === fieldId))
-          patchView({ filters: [...activeView!.filters, { id: newId(), fieldId, operator: "is", value: "" }] });
+        if (!activeView!.filters.some((filter) => filter.fieldId === fieldId))
+          patchView({
+            filters: [
+              ...activeView!.filters,
+              { id: newId(), fieldId, operator: "is", value: "" },
+            ],
+          });
         setPanel("filters");
       }}
-      onHide={fieldId === NAME ? undefined : () => patchView({ visibleFieldIds: activeView!.visibleFieldIds.filter(id => id !== fieldId) })}
-      onPreviewWidth={width => {
-        const next = width === undefined ? undefined : { viewId: activeView!.id, fieldId, width };
-        columnResizeRef.current = next; setColumnResize(next);
+      onHide={
+        fieldId === NAME
+          ? undefined
+          : () =>
+              patchView({
+                visibleFieldIds: activeView!.visibleFieldIds.filter(
+                  (id) => id !== fieldId,
+                ),
+              })
+      }
+      onPreviewWidth={(width) => {
+        const next =
+          width === undefined
+            ? undefined
+            : { viewId: activeView!.id, fieldId, width };
+        columnResizeRef.current = next;
+        setColumnResize(next);
       }}
-      onCommitWidth={width => {
-        columnResizeRef.current = undefined; setColumnResize(undefined);
-        patchView({ columnWidths: { ...activeView!.columnWidths, [fieldId]: width } });
+      onCommitWidth={(width) => {
+        columnResizeRef.current = undefined;
+        setColumnResize(undefined);
+        patchView({
+          columnWidths: { ...activeView!.columnWidths, [fieldId]: width },
+        });
       }}
       onResetWidth={() => {
-        const next = { ...activeView!.columnWidths }; delete next[fieldId];
+        const next = { ...activeView!.columnWidths };
+        delete next[fieldId];
         patchView({ columnWidths: next });
       }}
     />
   );
   const create = async () => {
-    if (!newRecord || !port.create || creating || pendingRef.current.size) return;
+    if (!newRecord || !port.create || creating || pendingRef.current.size)
+      return;
     ++sequence.current;
     pendingRef.current.add("__create__");
     setPending(new Set(pendingRef.current));
@@ -555,7 +610,7 @@ export function Board({
       // The create request still owns the pending guard. Its confirmed result
       // can be opened directly; user-driven selection remains guarded.
       setSelectedId(row.id);
-      setNotice(preview ? "已创建演示记录" : "已创建记录");
+      setNotice(preview ? t("Demo record created") : t("Record created"));
     } catch (e) {
       setError(message(e));
     } finally {
@@ -567,7 +622,7 @@ export function Board({
   const connection = (
     <div className="connection">
       <p className="panel-caption">
-        {scope ? "打开时的表格行范围" : "数据库全部记录"}
+        {scope ? t("Rows visible when opened") : t("All database records")}
       </p>
       {scope && (
         <button
@@ -575,7 +630,7 @@ export function Board({
           disabled={loading || pending.size > 0}
           onClick={() => void connect(config.tagId, config, true)}
         >
-          显示数据库全部记录
+          {t("Show all database records")}
         </button>
       )}
       <form
@@ -585,7 +640,7 @@ export function Board({
         }}
       >
         <label>
-          表格标签链接或 ID
+          {t("Table tag link or ID")}
           <input
             className="panel-input"
             value={sourceInput}
@@ -594,7 +649,7 @@ export function Board({
           />
         </label>
         <button className="new-button" disabled={loading || pending.size > 0}>
-          连接
+          {t("Connect")}
         </button>
       </form>
       {snapshot && (
@@ -604,7 +659,7 @@ export function Board({
             onClick={() => void open(config.tagId)}
           >
             <Icon name="arrow" />
-            打开原表格标签
+            {t("Open source table tag")}
           </button>
         </>
       )}
@@ -631,7 +686,11 @@ export function Board({
         row.cells[activeView.coverFieldId]?.richText && (
           <div
             className="card-media"
-            aria-label={`${row.name}的${snapshot?.fields.find((f) => f.id === activeView.coverFieldId)?.name}`}
+            aria-label={t("{p0}'s {p1}", {
+              p0: row.name,
+              p1: snapshot?.fields.find((f) => f.id === activeView.coverFieldId)
+                ?.name,
+            })}
             onClick={() => selectRow(row)}
           >
             {cellContent(row.cells[activeView.coverFieldId], "card")}
@@ -645,12 +704,12 @@ export function Board({
           <button className="card-title" onClick={() => selectRow(row)}>
             {row.title?.richText && renderRichCell
               ? renderRichCell(row.title, "card")
-              : row.name || "未命名"}
+              : row.name || t("Untitled")}
           </button>
           <button
             className="open-note icon-button"
-            aria-label={`打开${row.name}原笔记`}
-            title="打开原笔记"
+            aria-label={t("Open {p0} in RemNote", { p0: row.name })}
+            title={t("Open in RemNote")}
             onClick={() => void open(row.id)}
           >
             <Icon name="arrow" />
@@ -692,19 +751,20 @@ export function Board({
   );
   return (
     <main
+      lang={language}
       className={`db-board ${selected && !newRecord ? "has-open-record" : ""}`}
     >
       <div className="database-workspace">
         <header className="board-header">
           <div className="database-breadcrumb">
             <Icon name="table" />
-            <span>数据库</span>
-            {preview && <span className="preview-tag">演示</span>}
+            <span>{t("Database")}</span>
+            {preview && <span className="preview-tag">{t("Demo")}</span>}
             <div className="header-spacer" />
             {onClose && (
               <button
                 className="icon-button"
-                aria-label="关闭看板"
+                aria-label={t("Close board")}
                 disabled={pending.size > 0 || creating}
                 onClick={() => void closeBoard()}
               >
@@ -713,7 +773,7 @@ export function Board({
             )}
           </div>
           <div className="title-row">
-            <h1>{snapshot?.name || "连接数据库"}</h1>
+            <h1>{snapshot?.name || t("Connect database")}</h1>
           </div>
           {snapshot && activeView && viewState && (
             <ViewToolbar
@@ -724,7 +784,9 @@ export function Board({
               onChange={changeViews}
               panel={panel}
               setPanel={setPanel}
-              disabled={pending.size > 0 || loading || creating || !!columnResize}
+              disabled={
+                pending.size > 0 || loading || creating || !!columnResize
+              }
               search={search}
               setSearch={setSearch}
               onCreate={
@@ -736,21 +798,21 @@ export function Board({
           {error && (
             <div className="error-banner" role="alert">
               {error}
-              <button onClick={() => void refresh()}>重新读取</button>
+              <button onClick={() => void refresh()}>{t("Reload")}</button>
             </div>
           )}
           {viewError && (
             <div className="error-banner" role="alert">
               {viewError}
               <button onClick={() => void persistConfig(configRef.current)}>
-                重试保存视图
+                {t("Retry saving view")}
               </button>
             </div>
           )}
         </header>
         {!snapshot ? (
           <div className="setup-state">
-            {loading ? <p>正在读取数据库…</p> : connection}
+            {loading ? <p>{t("Loading database…")}</p> : connection}
           </div>
         ) : (
           activeView &&
@@ -774,7 +836,9 @@ export function Board({
                               onClick={() =>
                                 patchView({
                                   collapsedGroups:
-                                    activeView.collapsedGroups.includes(column.id)
+                                    activeView.collapsedGroups.includes(
+                                      column.id,
+                                    )
                                       ? activeView.collapsedGroups.filter(
                                           (id) => id !== column.id,
                                         )
@@ -789,11 +853,15 @@ export function Board({
                               }
                             >
                               <span>{column.name}</span>
-                              <span className="count">{column.rows.length}</span>
+                              <span className="count">
+                                {column.rows.length}
+                              </span>
                             </button>
                             <button
                               className="icon-button group-menu"
-                              aria-label={`设置分组 ${column.name}`}
+                              aria-label={t("Set group {p0}", {
+                                p0: column.name,
+                              })}
                               onClick={() => setPanel("group")}
                             >
                               <Icon name="more" />
@@ -813,7 +881,7 @@ export function Board({
                                   }
                                 >
                                   <Icon name="plus" />
-                                  新页面
+                                  {t("New page")}
                                 </button>
                               )}
                             </div>
@@ -822,12 +890,12 @@ export function Board({
                       ))}
                       {!columns.length && (
                         <div className="empty-state">
-                          没有符合条件的记录。
+                          {t("No matching records.")}
                           <button
                             className="subtle-button"
                             onClick={() => setPanel("filters")}
                           >
-                            调整筛选
+                            {t("Adjust filters")}
                           </button>
                         </div>
                       )}
@@ -837,16 +905,31 @@ export function Board({
                   <div
                     className={`table-scroll ${activeView.wrapCells ? "wrap-cells" : ""}`}
                   >
-                    <table style={{ width: tableWidth(NAME) + shownFields.reduce((sum, field) => sum + tableWidth(field.id), 0) + 38 }}>
+                    <table
+                      style={{
+                        width:
+                          tableWidth(NAME) +
+                          shownFields.reduce(
+                            (sum, field) => sum + tableWidth(field.id),
+                            0,
+                          ) +
+                          38,
+                      }}
+                    >
                       <colgroup>
                         <col style={{ width: tableWidth(NAME) }} />
-                        {shownFields.map(field => <col key={field.id} style={{ width: tableWidth(field.id) }} />)}
+                        {shownFields.map((field) => (
+                          <col
+                            key={field.id}
+                            style={{ width: tableWidth(field.id) }}
+                          />
+                        ))}
                         <col style={{ width: 38 }} />
                       </colgroup>
                       <thead>
                         <tr>
                           <th className="name-column" data-field-id={NAME}>
-                            {tableHeader(NAME, "名称", "name")}
+                            {tableHeader(NAME, t("Name"), "name")}
                           </th>
                           {shownFields.map((f) => (
                             <th key={f.id} data-field-id={f.id}>
@@ -856,7 +939,7 @@ export function Board({
                           <th className="add-column">
                             <button
                               className="icon-button"
-                              aria-label="显示属性"
+                              aria-label={t("Visible properties")}
                               onClick={() => setPanel("properties")}
                             >
                               <Icon name="plus" />
@@ -873,11 +956,13 @@ export function Board({
                                 onClick={() => selectRow(row)}
                               >
                                 <Icon name="page" />
-                                {row.name || "未命名"}
+                                {row.name || t("Untitled")}
                               </button>
                               <button
                                 className="open-note icon-button"
-                                aria-label={`打开${row.name}原笔记`}
+                                aria-label={t("Open {p0} in RemNote", {
+                                  p0: row.name,
+                                })}
                                 onClick={() => void open(row.id)}
                               >
                                 <Icon name="arrow" />
@@ -908,29 +993,31 @@ export function Board({
                         onClick={() => setNewRecord({ name: "" })}
                       >
                         <Icon name="plus" />
-                        新页面
+                        {t("New page")}
                       </button>
                     )}
                     {!rows.length && (
-                      <div className="empty-state">没有符合条件的记录。</div>
+                      <div className="empty-state">
+                        {t("No matching records.")}
+                      </div>
                     )}
                   </div>
                 )}
                 <footer className="database-footer">
                   <span>
-                    {rows.length} 条记录
+                    {rows.length} {t(" records")}
                     {snapshot.rows.length !== rows.length
-                      ? ` / 共 ${snapshot.rows.length} 条`
+                      ? t(" of {p0}", { p0: snapshot.rows.length })
                       : ""}
-                    {scope ? " · 当前表格范围" : ""}
+                    {scope ? t(" · Current table scope") : ""}
                   </span>
                   <span aria-live="polite">
                     {loading
-                      ? "正在读取…"
+                      ? t("Loading…")
                       : pending.size || creating
-                        ? "正在保存…"
+                        ? t("Saving…")
                         : viewSaving
-                          ? "正在保存视图…"
+                          ? t("Saving view…")
                           : notice}
                   </span>
                 </footer>
@@ -956,18 +1043,18 @@ export function Board({
           <form
             className="create-record"
             role="dialog"
-            aria-label="新建记录"
+            aria-label={t("New record")}
             onSubmit={(e) => {
               e.preventDefault();
               void create();
             }}
           >
             <div className="panel-heading">
-              <strong>新建记录</strong>
+              <strong>{t("New record")}</strong>
               <button
                 type="button"
                 className="icon-button"
-                aria-label="取消新建"
+                aria-label={t("Cancel")}
                 disabled={creating}
                 onClick={() => setNewRecord(undefined)}
               >
@@ -977,8 +1064,8 @@ export function Board({
             <input
               autoFocus
               className="panel-input"
-              aria-label="记录名称"
-              placeholder="未命名"
+              aria-label={t("Record name")}
+              placeholder={t("Untitled")}
               value={newRecord.name}
               onChange={(e) =>
                 setNewRecord({ ...newRecord, name: e.target.value })
@@ -986,7 +1073,7 @@ export function Board({
             />
             {error && <p role="alert">{error}</p>}
             <button className="new-button" disabled={creating}>
-              {creating ? "正在创建…" : "创建记录"}
+              {creating ? t("Creating…") : t("Create record")}
             </button>
           </form>
         </div>
@@ -995,18 +1082,18 @@ export function Board({
         <aside
           className="detail-drawer"
           role="dialog"
-          aria-label={`${selected.name}笔记`}
+          aria-label={t("{p0} note", { p0: selected.name })}
         >
           <div className="drawer-heading">
             <span className="drawer-heading-title">{selected.name}</span>
             <div className="drawer-heading-actions">
               <button
-                aria-label="在 RemNote 打开完整笔记"
+                aria-label={t("Open full note in RemNote")}
                 onClick={() => void open(selected.id)}
               >
                 <Icon name="arrow" />
               </button>
-              <button aria-label="关闭笔记" onClick={closeDetail}>
+              <button aria-label={t("Close note")} onClick={closeDetail}>
                 <Icon name="close" />
               </button>
             </div>
@@ -1024,7 +1111,7 @@ export function Board({
                 className="original-note"
                 onClick={() => void open(selected.id)}
               >
-                在 RemNote 打开完整笔记
+                {t("Open full note in RemNote")}
               </button>
             )}
           </div>

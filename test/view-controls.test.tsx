@@ -38,12 +38,7 @@ async function mount(
   document.body.append(root);
   await act(async () => {
     ReactDOM.render(
-      <Board
-        initial={config}
-        port={port}
-        {...options}
-        onConfig={save}
-      />,
+      <Board initial={config} port={port} {...options} onConfig={save} />,
       root,
     );
   });
@@ -68,21 +63,21 @@ async function change(label: string, value: string) {
 }
 it("saves independent filters and sorts per view, and restores them after reopening", async () => {
   const { save, port, data } = await mount();
-  await click("筛选");
-  await click("添加筛选条件");
-  await change("筛选值 1", "example-option-1-2");
+  await click("Filter");
+  await click("Add filter");
+  await change("Filter value 1", "example-option-1-2");
   expect(root.querySelectorAll("tbody tr")).toHaveLength(3);
-  await click("排序");
-  await click("添加排序");
-  await change("排序方向 1", "desc");
+  await click("Sort");
+  await click("Add sort");
+  await change("Sort direction 1", "desc");
   expect(
     [...root.querySelectorAll("tbody tr")].map((r) =>
       r.getAttribute("data-row-id"),
     ),
   ).toEqual(["example-row-08", "example-row-05", "example-row-02"]);
-  await click("看板");
+  await click("Board");
   expect(root.querySelectorAll(".card")).toHaveLength(9);
-  await click("表格");
+  await click("Table");
   expect(root.querySelectorAll("tbody tr")).toHaveLength(3);
   const saved = (save.mock.calls.at(-1) as unknown as [Config])[0];
   act(() => {
@@ -101,23 +96,38 @@ it("opens the requested board grouping while preserving queries and allowing lat
   const config = inferConfig(data);
   config.viewState = defaultViews(data, config);
   const board = config.viewState.views[1];
-  board.filters = [{id:'f',fieldId:NAME,operator:'contains',value:'示例'}];
-  board.sorts = [{id:'s',fieldId:NAME,direction:'desc'}];
+  board.filters = [
+    { id: "f", fieldId: NAME, operator: "contains", value: "0" },
+  ];
+  board.sorts = [{ id: "s", fieldId: NAME, direction: "desc" }];
   board.hiddenGroups = [data.fields[1].choices[0].id];
   board.collapsedGroups = [data.fields[1].choices[1].id];
   const { save, port } = await mount(data, config, {
-    openingBoard: {groupFieldId:config.filterFieldId},
+    openingBoard: { groupFieldId: config.filterFieldId },
   });
-  expect(root.querySelector('[role="tab"][aria-selected="true"]')?.textContent).toBe('看板');
-  expect(root.querySelectorAll('.card')).toHaveLength(9);
+  expect(
+    root.querySelector('[role="tab"][aria-selected="true"]')?.textContent,
+  ).toBe("Board");
+  expect(root.querySelectorAll(".card")).toHaveLength(9);
   const saved = (save.mock.calls.at(-1) as unknown as [Config])[0];
-  const opened = saved.viewState!.views.find(v=>v.id===saved.viewState!.activeViewId)!;
-  expect(opened).toMatchObject({id:board.id,groupFieldId:config.filterFieldId,filters:board.filters,sorts:board.sorts,hiddenGroups:[],collapsedGroups:[]});
+  const opened = saved.viewState!.views.find(
+    (v) => v.id === saved.viewState!.activeViewId,
+  )!;
+  expect(opened).toMatchObject({
+    id: board.id,
+    groupFieldId: config.filterFieldId,
+    filters: board.filters,
+    sorts: board.sorts,
+    hiddenGroups: [],
+    collapsedGroups: [],
+  });
   expect(saved.viewState!.views).toHaveLength(2);
   expect(board.groupFieldId).toBe(config.groupFieldId);
-  await click('表格');
-  await click('刷新');
-  expect(root.querySelector('[role="tab"][aria-selected="true"]')?.textContent).toBe('表格');
+  await click("Table");
+  await click("Refresh");
+  expect(
+    root.querySelector('[role="tab"][aria-selected="true"]')?.textContent,
+  ).toBe("Table");
   expect(port.write).not.toHaveBeenCalled();
 });
 it("adds a board when only a saved table remains without replacing that table", async () => {
@@ -126,56 +136,58 @@ it("adds a board when only a saved table remains without replacing that table", 
   config.viewState = defaultViews(data, config);
   config.viewState.views = [config.viewState.views[0]];
   const table = structuredClone(config.viewState.views[0]);
-  const {save} = await mount(data, config, {openingBoard:{}});
+  const { save } = await mount(data, config, { openingBoard: {} });
   const saved = (save.mock.calls.at(-1) as unknown as [Config])[0];
   expect(saved.viewState!.views[0]).toEqual(table);
   expect(saved.viewState!.views).toHaveLength(2);
-  expect(root.querySelector('[role="tab"][aria-selected="true"]')?.textContent).toBe('看板');
+  expect(
+    root.querySelector('[role="tab"][aria-selected="true"]')?.textContent,
+  ).toBe("Board");
 });
 it("exposes plain tables without a group property and applies text filters", async () => {
   const data: Snapshot = {
     ...structuredClone(fixture),
-    fields: [{ id: "plain", name: "作者", type: "text", choices: [] }],
+    fields: [{ id: "plain", name: "Author", type: "text", choices: [] }],
     rows: [
       {
         id: "a",
-        name: "书籍 A",
+        name: "Book A",
         parentId: "x",
-        cells: { plain: { text: "作者 A", refs: [] } },
+        cells: { plain: { text: "Author A", refs: [] } },
       },
     ],
   };
   await mount(data);
   expect(root.querySelectorAll("tbody tr")).toHaveLength(1);
   expect(root.querySelector("[role=alert]")).toBeNull();
-  await click("筛选");
-  await click("添加筛选条件");
-  await change("筛选属性 1", NAME);
-  await change("筛选条件 1", "contains");
-  await change("筛选值 1", "书籍");
+  await click("Filter");
+  await click("Add filter");
+  await change("Filter property 1", NAME);
+  await change("Filter condition 1", "contains");
+  await change("Filter value 1", "Book");
   expect(root.querySelectorAll("tbody tr")).toHaveLength(1);
-  await change("筛选值 1", "不存在");
+  await change("Filter value 1", "Not present");
   expect(root.querySelectorAll("tbody tr")).toHaveLength(0);
 });
 it("changes grouping without altering original values and writes only an edited property", async () => {
   const { port } = await mount();
-  await click("看板");
-  await click("视图设置");
+  await click("Board");
+  await click("View settings");
   await act(async () =>
     Simulate.click(
       [...root.querySelectorAll(".settings-row")].find((b) =>
-        b.textContent?.startsWith("分组"),
+        b.textContent?.startsWith("Group"),
       )!,
     ),
   );
-  await change("分组依据", "example-field-1");
+  await change("Group by", "example-field-1");
   expect(root.querySelectorAll(".column .card")).toHaveLength(9);
   expect(port.write).not.toHaveBeenCalled();
-  await click("关闭设置");
-  await click("表格");
+  await click("Close settings");
+  await click("Table");
   const row = root.querySelector('[data-row-id="example-row-01"]')!;
   await act(async () =>
-    Simulate.change(row.querySelector('[aria-label="难点"]')!, {
+    Simulate.change(row.querySelector('[aria-label="Focus"]')!, {
       target: { value: "example-option-4-2" },
     } as any),
   );
@@ -183,22 +195,22 @@ it("changes grouping without altering original values and writes only an edited 
     expect.objectContaining({
       rowId: "example-row-01",
       fieldId: "example-field-4",
-      value: { text: "难点 B", refs: ["example-option-4-2"] },
+      value: { text: "Transitions", refs: ["example-option-4-2"] },
     }),
   );
 });
 it("hides a property in one view without deleting source fields", async () => {
   const { data, port } = await mount();
-  await click("视图设置");
+  await click("View settings");
   await act(async () =>
     Simulate.click(
       [...root.querySelectorAll(".settings-row")].find((b) =>
-        b.textContent?.includes("属性是否可见"),
+        b.textContent?.includes("Property visibility"),
       )!,
     ),
   );
-  await click("隐藏歌曲");
-  expect(root.querySelector("thead")?.textContent).not.toContain("歌曲");
-  expect(data.fields.some((f) => f.name === "歌曲")).toBe(true);
+  await click("Hide Song");
+  expect(root.querySelector("thead")?.textContent).not.toContain("Song");
+  expect(data.fields.some((f) => f.name === "Song")).toBe(true);
   expect(port.write).not.toHaveBeenCalled();
 });

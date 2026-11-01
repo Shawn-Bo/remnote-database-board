@@ -1,3 +1,4 @@
+import { t } from "./i18n";
 import type { RichTextInterface } from "@remnote/plugin-sdk";
 import type { DatabaseViews } from "./views";
 
@@ -90,7 +91,11 @@ export function cellForChoice(key: string, field: Field): Cell {
   if (key === EMPTY) return emptyCell();
   const choice = field.choices.find((c) => c.id === key);
   if (!choice)
-    throw new Error("这个栏目已被删除或不属于当前属性，请刷新后重试。");
+    throw new Error(
+      t(
+        "This group was deleted or no longer belongs to this property. Refresh and try again.",
+      ),
+    );
   return { text: choice.name, refs: [choice.id] };
 }
 export function inferConfig(
@@ -102,18 +107,27 @@ export function inferConfig(
   const groups = snapshot.fields.filter((f) => f.type === "single_select");
   const group =
     choose(prior?.groupFieldId, (f) => f.type === "single_select") ??
-    groups.find((f) => /熟练|状态|进度/.test(f.name)) ??
+    groups.find((f) =>
+      /proficiency|status|progress|\u719f\u7ec3|\u72b6\u6001|\u8fdb\u5ea6/i.test(
+        f.name,
+      ),
+    ) ??
     groups[0];
   const filter =
     choose(prior?.filterFieldId, (f) => f.id !== group?.id) ??
     snapshot.fields.find(
-      (f) => /歌曲|所属|项目/.test(f.name) && f.id !== group?.id,
+      (f) =>
+        /song|project|collection|\u6b4c\u66f2|\u6240\u5c5e|\u9879\u76ee/i.test(
+          f.name,
+        ) && f.id !== group?.id,
     );
   const record =
     choose(prior?.recordFieldId, (f) => ["text", "0"].includes(f.type)) ??
     snapshot.fields.find(
       (f) =>
-        /进展记录|训练记录|备注/.test(f.name) && ["text", "0"].includes(f.type),
+        /practice notes|notes|progress log|\u8fdb\u5c55\u8bb0\u5f55|\u8bad\u7ec3\u8bb0\u5f55|\u5907\u6ce8/i.test(
+          f.name,
+        ) && ["text", "0"].includes(f.type),
     );
   return {
     tagId: snapshot.tagId,
@@ -165,5 +179,5 @@ export function parseRemId(input: string): string {
   } catch {
     /* A user-facing validation error follows. */
   }
-  throw new Error("请粘贴 RemNote 表格标签的链接或节点 ID。");
+  throw new Error(t("Paste a RemNote table tag link or Rem ID."));
 }

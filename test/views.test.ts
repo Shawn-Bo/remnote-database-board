@@ -20,8 +20,8 @@ describe("generic database views", () => {
   it("opens a table with no select property or training-specific fields", () => {
     const basic: Snapshot = {
       tagId: "books",
-      name: "书籍",
-      fields: [{ id: "author", name: "作者", type: "text", choices: [] }],
+      name: "Book",
+      fields: [{ id: "author", name: "Author", type: "text", choices: [] }],
       rows: [],
       loadedAt: 0,
     };
@@ -32,24 +32,24 @@ describe("generic database views", () => {
       "table",
     );
     expect(viewGroups([], undefined)).toEqual([
-      { id: EMPTY, name: "全部", rows: [], choiceIndex: -1 },
+      { id: EMPTY, name: "All", rows: [], choiceIndex: -1 },
     ]);
   });
   it("filters native option identities, including legacy text values and identical names", () => {
     const field = {
       id: "choice",
-      name: "类别",
+      name: "Category",
       type: "single_select",
       choices: [
-        { id: "a", name: "相同" },
-        { id: "b", name: "相同" },
+        { id: "a", name: "Same" },
+        { id: "b", name: "Same" },
       ],
     };
     const row: Row = {
       id: "r",
       name: "r",
       parentId: null,
-      cells: { choice: { text: "相同", refs: ["b"] } },
+      cells: { choice: { text: "Same", refs: ["b"] } },
     };
     const rule = {
       id: "f",
@@ -61,7 +61,7 @@ describe("generic database views", () => {
     expect(matches(row, { ...rule, value: "b" }, [field])).toBe(true);
     const legacy: Row = {
       ...row,
-      cells: { choice: { text: "相同", refs: [] } },
+      cells: { choice: { text: "Same", refs: [] } },
     };
     expect(matches(legacy, rule, [field])).toBe(true);
   });
@@ -100,10 +100,10 @@ describe("generic database views", () => {
   it("uses numeric order and keeps missing values last in either direction", () => {
     const table: Snapshot = {
       ...data,
-      fields: [{ id: "num", name: "数量", type: "number", choices: [] }],
+      fields: [{ id: "num", name: "Amount", type: "number", choices: [] }],
       rows: ["10", "2", "", "-3", "2"].map((text, i) => ({
         id: `r${i}`,
-        name: `记录${5 - i}`,
+        name: `Record ${5 - i}`,
         parentId: null,
         cells: { num: { text, refs: [] } },
       })),
@@ -168,7 +168,7 @@ describe("generic database views", () => {
     ]);
   });
   it("uses numeric equality while keeping an empty value distinct from zero", () => {
-    const field = { id: "n", name: "数量", type: "number", choices: [] };
+    const field = { id: "n", name: "Amount", type: "number", choices: [] };
     const row = {
       id: "r",
       name: "r",
@@ -190,7 +190,7 @@ describe("generic database views", () => {
   it("keeps every row, including stale option references, in a visible group", () => {
     const rows = structuredClone(data.rows);
     rows[0].cells[config.groupFieldId] = { text: "", refs: [] };
-    rows[1].cells[config.groupFieldId] = { text: "已删除", refs: ["stale"] };
+    rows[1].cells[config.groupFieldId] = { text: "Deleted", refs: ["stale"] };
     const groups = viewGroups(rows, data.fields[1]);
     expect(groups.find((g) => g.id === UNKNOWN)?.rows.map((r) => r.id)).toEqual(
       [rows[1].id],

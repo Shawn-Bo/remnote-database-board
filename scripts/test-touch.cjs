@@ -50,9 +50,9 @@ async function main() {
           {x: edgeX, y: Math.round(start.y), target}, {timeout: 10000});
         await cdp.send('Input.dispatchTouchEvent', {type: 'touchEnd', touchPoints: []});
         await page.waitForFunction(({id, field, target}) =>
-          JSON.parse(sessionStorage.getItem('remnote-board-preview:v1'))?.rows.find(r => r.id === id)?.cells[field]?.refs[0] === target,
+          JSON.parse(sessionStorage.getItem('remnote-board-preview:v2'))?.rows.find(r => r.id === id)?.cells[field]?.refs[0] === target,
           {id: row.id, field: config.groupFieldId, target});
-        const saved = await page.evaluate(id => JSON.parse(sessionStorage.getItem('remnote-board-preview:v1')).rows.find(r => r.id === id), row.id);
+        const saved = await page.evaluate(id => JSON.parse(sessionStorage.getItem('remnote-board-preview:v2')).rows.find(r => r.id === id), row.id);
         assert.equal(saved.parentId, row.parentId);
         for (const [id, cell] of Object.entries(row.cells)) if (id !== config.groupFieldId) assert.deepEqual(saved.cells[id], cell);
         assert.deepEqual(errors, []);
@@ -75,7 +75,7 @@ async function main() {
         await page.waitForTimeout(350);
         assert.equal(await scroller.evaluate(el => el.scrollLeft), stopped);
         assert.equal(await page.locator('.card.dragging').count(), 0);
-        assert.equal(await page.evaluate(() => sessionStorage.getItem('remnote-board-preview:v1')), null);
+        assert.equal(await page.evaluate(() => sessionStorage.getItem('remnote-board-preview:v2')), null);
         assert.deepEqual(errors, []);
         checks.push('A cancelled touch drag stops scrolling and does not write');
       } finally {await context.close();}
@@ -94,7 +94,7 @@ async function main() {
         await cdp.send('Input.dispatchTouchEvent', {type: 'touchEnd', touchPoints: []});
         await page.waitForTimeout(400);
         assert.ok(await scroller.evaluate(el => el.scrollLeft) > before + 20, 'swiping on a card should scroll the board');
-        assert.equal(await page.evaluate(() => sessionStorage.getItem('remnote-board-preview:v1')), null);
+        assert.equal(await page.evaluate(() => sessionStorage.getItem('remnote-board-preview:v2')), null);
         assert.deepEqual(errors, []);
         checks.push('A horizontal swipe on a card scrolls without changing the record');
       } finally {await context.close();}

@@ -1,33 +1,44 @@
-# Notion 式数据库体验：验证记录
+# Notion-Style Database Experience: Validation Record
 
-版本：0.3.5。验证日期：2026-11-01。原生客户端：RemNote 1.29.1。
+Prior validated release: 0.3.5 (2026-11-01) on RemNote 1.29.1. Current release: 0.3.6 (2026-11-01).
 
-参照 [Notion 视图、筛选与排序](https://www.notion.com/help/views-filters-and-sorts)、[看板](https://www.notion.com/help/boards) 和 [表格](https://www.notion.com/help/tables)，实现表格与看板、多视图配置、原属性编辑和原生笔记侧栏。
+Modeled on [Notion Views, Filters, and Sorts](https://www.notion.com/help/views-filters-and-sorts), [Boards](https://www.notion.com/help/boards), and [Tables](https://www.notion.com/help/tables), implementing **Table** and **Board** layouts, per-view configuration, direct property editing, and the native note sidebar.
 
-## 已完成验证
+## 0.3.6 Localization Scope
 
-| 功能 | 验证结果 |
-| --- | --- |
-| 数据源与入口 | 高级表格自身显示“打开看板”，页面导航后自动更新；原生筛选后的三行范围在插件中保留 |
-| 筛选、排序与视图 | 项目筛选与名称排序得到预期记录；关闭重开后配置和顺序保留；其他视图保持独立 |
-| 看板拖拽 | 原生临时表跨列拖动后，MCP 回读确认原分组属性更新，其余记录保持原值 |
-| 原生笔记侧栏 | 完整呈现标题、标签、属性、图片和正文；输入后回读确认原节点更新；左侧数据库可继续操作 |
-| 新建记录 | 创建后立即打开原生页面，继承分组和支持的等值筛选；同一提交只生成一条记录 |
-| 列宽与列菜单 | 原生拖动名称列从 200px 到 320px；列菜单排序、筛选与重开保留均通过；菜单位于数据库区域内 |
-| 图片显示 | 原生封面与谱例正常显示；菜单仅遮住重叠区域，关闭后恢复完整图像 |
-| 空单元格 | 单选和文本空值直接留白；点击分别打开选项和输入框 |
-| 手机尺寸布局 | 390 × 844 预览验证筛选、编辑、横向浏览、44px 控件、全宽笔记及关闭后恢复视图 |
-| 服务升级 | 15 个发布文件摘要一致；旧服务退出；只保留当前生成的运行目录；部署包完整性通过 |
+Release 0.3.6 switches the default UI and synthetic demo data to English and adds an English / Simplified Chinese preference under **RemNote Settings > Plugin Settings > Database Board > Language**. This setting updates plugin UI and command labels (`Open board`, `Open as board`, `Table`, `Board`, `View settings`, `New`, `Database Board`, `Open recent board`) without modifying user notes or property names.
 
-## 自动检查
+## Completed Validation (0.3.6)
 
-类型检查、84 项测试与生产构建通过。测试覆盖视图查询、配置保存、写入校验、新建记录、中文输入法、原生页面接入、图片保留、表格入口、列宽拖动及菜单交互。
+- Verified the English Guitar Practice demo in the browser.
+- Switched the native RemNote plugin from English to Simplified Chinese and back through its Language preference; the table launcher and database toolbar updated correctly.
+- Reloaded the native client with the final build and verified English Table / Board labels for previously saved default views.
+- Verified all 15 served files against release digests after installation; the previous runtime was removed.
 
-`test:browser`、`test:mobile` 和 `test:touch` 脚本已随界面更新，语法检查通过；其完整执行待补充。当前交互证据来自手动浏览器预览与原生客户端验证。
+## Completed Validation (0.3.5)
 
-## 待验收
+| Area                       | Result                                                                                                                                                 |
+| -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Data source & entry points | Advanced Tables display **Open board** and update on page navigation; native filtered 3-row scope is preserved when opening the board                  |
+| Filters, sorts & views     | Project filtering and name sorting return expected records; view config and order persist across reopen; other views remain independent                |
+| Board drag-and-drop        | Moving a card across columns in a native table updates the underlying grouping property on MCP read-back while leaving other records unchanged         |
+| Native note sidebar        | Renders title, tags, properties, images, and body; typing updates the underlying Rem on read-back while the database remains interactive               |
+| New record creation        | Clicking **New** opens the native note immediately, inherits board grouping and supported equality filters, and creates a single record per submission |
+| Column widths & menus      | Dragging the Name column from 200px to 320px, sorting, and filtering via column menus persist across reopen; menus stay within the database bounds     |
+| Image rendering            | Native cover images and musical score examples render intact; menus only overlay intersecting areas and restore the full image on close                |
+| Blank cells                | Empty single-select and text cells render blank and open the option picker or text input when clicked                                                  |
+| Mobile viewport layout     | 390 × 844 preview verified filtering, editing, horizontal scrolling, 44px touch targets, full-width note view, and state restoration on close          |
+| Service upgrade            | All 15 release file digests match; old service exits cleanly; only the active runtime directory is retained; bundle integrity check passes             |
 
-- iPhone 实机安装、触摸操作与跨设备同步。
-- 更多界面状态的视觉对照。
+## Automated Checks
 
-源码和安装包使用合成演示数据；客户端截图及测试节点 ID 保存在本地工作记录。
+Typechecking, 91 automated tests, and the production build passed for 0.3.6. Coverage includes view queries, saved configurations, write verification, record creation, CJK IME composition, native note mounting, image preservation, table entry points, column resizing, and menu interactions. Localization checks cover language changes, stale preference reads, translated placeholders, English demo content, legacy default view names, and record creation during a language change.
+
+The `test:browser`, `test:mobile`, and `test:touch` scripts were updated alongside the UI and pass syntax checks; full automated execution of those suites remains pending, with interactive evidence currently provided by manual browser preview and native client verification.
+
+## Pending Verification
+
+- Physical iPhone installation, touch interaction, and cross-device sync.
+- Additional visual regression checks across UI states.
+
+Source files and installer bundles use synthetic demo data; client screenshots and test node IDs are kept in local working records.

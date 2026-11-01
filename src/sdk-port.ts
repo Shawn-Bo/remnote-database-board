@@ -1,3 +1,4 @@
+import { t } from "./i18n";
 import type {
   RNPlugin,
   PluginRem,
@@ -95,12 +96,17 @@ export class SdkBoardPort implements BoardPort {
     const fields = await this.fields(tag);
     // A pasted ordinary document must not become a tag as a side effect of New.
     if (!fields.length && !(await tag.hasPowerup("g")))
-      throw new Error("这不是现有表格或标签，请使用高级表格的标签链接。");
+      throw new Error(
+        t("This isn't a valid table or tag. Use an Advanced Table tag link."),
+      );
     return fields;
   }
   async load(tagId: string, rowIds?: string[]): Promise<Snapshot> {
     const tag = await this.plugin.rem.findOne(tagId);
-    if (!tag) throw new Error("找不到这张表，请确认当前知识库和表格标签链接。");
+    if (!tag)
+      throw new Error(
+        t("Table not found. Check your knowledge base and table tag link."),
+      );
     const fields = await this.sourceFields(tag);
     const scope = rowIds ? new Set(rowIds) : undefined;
     const members = (await tag.taggedRem()).filter(
@@ -124,17 +130,20 @@ export class SdkBoardPort implements BoardPort {
   }
   async write(request: WriteRequest): Promise<Row> {
     const key = request.rowId;
-    if (this.locks.has(key)) throw new Error("这条记录正在保存，请稍候。");
+    if (this.locks.has(key)) throw new Error(t("Saving record, please wait."));
     this.locks.add(key);
     try {
       const tag = await this.plugin.rem.findOne(request.config.tagId);
       const rem = await this.plugin.rem.findOne(request.rowId);
-      if (!tag || !rem) throw new Error("表格或记录已被删除，请刷新。");
+      if (!tag || !rem)
+        throw new Error(t("Table or record was deleted. Refresh the view."));
       if (!(await rem.getTagRems()).some((t) => t._id === tag._id))
-        throw new Error("这条记录已不属于当前数据库，请刷新。");
+        throw new Error(
+          t("This record is no longer in this database. Refresh the view."),
+        );
       const fields = await this.fields(tag);
       const field = fields.find((f) => f.id === request.fieldId);
-      if (!field) throw new Error("属性已被删除，请刷新。");
+      if (!field) throw new Error(t("Property was deleted. Refresh the view."));
       const next = request.value;
       this.validateValue(field, next);
       const rawCurrent = await rem.getTagPropertyValue(field.id);
@@ -144,50 +153,64 @@ export class SdkBoardPort implements BoardPort {
         !rawCurrent.every((part) => typeof part === "string")
       )
         throw new Error(
-          "这个属性含有富文本内容，请打开原笔记编辑，以保留格式。",
+          t(
+            "This property contains rich text. Edit it in RemNote to preserve formatting.",
+          ),
         );
       const current = await this.cell(rawCurrent);
       if (!sameCell(current, request.expected))
-        throw new Error("这项内容刚被其他操作修改，已停止覆盖。请刷新后重试。");
+        throw new Error(
+          t("This value was modified elsewhere. Refresh and try again."),
+        );
       const parent = rem.parent;
       const raw = await this.rawValue(next);
       await rem.setTagPropertyValue(field.id, raw);
       const fresh = await this.plugin.rem.findOne(rem._id);
-      if (!fresh) throw new Error("保存后无法读取分段，请在原表格检查。");
+      if (!fresh)
+        throw new Error(
+          t("Could not verify saved content. Check the original table."),
+        );
       const actual = await this.cell(await fresh.getTagPropertyValue(field.id));
       if (!sameCell(actual, next))
-        throw new Error("属性写入后未能确认结果，请刷新并检查原表格。");
+        throw new Error(
+          t(
+            "Could not confirm property update. Refresh and check the original table.",
+          ),
+        );
       if (fresh.parent !== parent)
-        throw new Error("分段位置被其他操作改变，请检查原笔记。");
+        throw new Error(
+          t("Content position changed elsewhere. Check the note in RemNote."),
+        );
       return this.row(fresh, fields);
     } finally {
       this.locks.delete(key);
     }
   }
   private validateValue(field: Field, next: Cell) {
-    if (next.richText) throw new Error("富文本内容请在原笔记中编辑。");
+    if (next.richText) throw new Error(t("Edit rich text in RemNote."));
     if (field.type === "single_select" || field.type === "multi_select") {
       if (
         (field.type === "single_select" && next.refs.length > 1) ||
         (!next.refs.length && next.text.trim())
       )
-        throw new Error("请选择原表格中的选项。");
+        throw new Error(t("Select an option from the original table."));
       if (
         new Set(next.refs).size !== next.refs.length ||
         next.refs.some((id) => !field.choices.some((c) => c.id === id))
       )
-        throw new Error("目标选项已被删除，请刷新。");
+        throw new Error(t("Target option was deleted. Refresh the view."));
       return;
     }
     if (!["text", "0", "number", "url"].includes(field.type))
-      throw new Error("此属性请在 RemNote 原笔记中编辑。");
-    if (next.refs.length) throw new Error("此属性不接受选项引用。");
+      throw new Error(t("Edit this property in RemNote."));
+    if (next.refs.length)
+      throw new Error(t("This property doesn't accept option references."));
     if (
       field.type === "number" &&
       next.text.trim() &&
       !Number.isFinite(Number(next.text))
     )
-      throw new Error("请输入有效数字。");
+      throw new Error(t("Enter a valid number."));
   }
   private async rawValue(value: Cell): Promise<RichTextInterface | undefined> {
     if (value.refs.length) {
@@ -203,19 +226,23 @@ export class SdkBoardPort implements BoardPort {
     name: string,
     cells: Record<string, Cell> = {},
   ): Promise<Row> {
+    const recordName = name.trim() || t("Untitled");
     const tag = await this.plugin.rem.findOne(tagId);
-    if (!tag) throw new Error("数据库已被删除，请刷新。");
+    if (!tag) throw new Error(t("Database was deleted. Refresh the view."));
     const fields = await this.sourceFields(tag);
     for (const [id, value] of Object.entries(cells)) {
       const field = fields.find((f) => f.id === id);
-      if (!field) throw new Error("属性已改变，请刷新后新建。");
+      if (!field)
+        throw new Error(
+          t("Properties changed. Refresh before creating a record."),
+        );
       this.validateValue(field, value);
     }
     const rem = await this.plugin.rem.createRem();
-    if (!rem) throw new Error("无法创建记录，请重试。");
+    if (!rem) throw new Error(t("Could not create record. Try again."));
     try {
       await rem.setParent(tagId);
-      await rem.setText([name.trim() || "未命名"]);
+      await rem.setText([recordName]);
       await rem.addTag(tagId);
       for (const [id, value] of Object.entries(cells))
         await rem.setTagPropertyValue(id, await this.rawValue(value));
@@ -225,19 +252,22 @@ export class SdkBoardPort implements BoardPort {
         !(await fresh.getTagRems()).some((t) => t._id === tagId) ||
         fresh.parent !== tagId
       )
-        throw new Error("无法确认新记录");
+        throw new Error(t("Could not verify new record"));
       const saved = await this.row(fresh, fields);
       if (
-        saved.name !== (name.trim() || "未命名") ||
+        saved.name !== recordName ||
         Object.entries(cells).some(
           ([id, value]) => !sameCell(saved.cells[id], value),
         )
       )
-        throw new Error("无法确认属性");
+        throw new Error(t("Could not verify property"));
       return saved;
     } catch (e) {
       throw new Error(
-        `记录已创建（${rem._id}），但未完成初始化。请在原笔记检查后继续，避免重复新建。${String(e)}`,
+        t(
+          "Record created ({p0}), but setup didn't finish. Check the note in RemNote before creating another. {p1}",
+          { p0: rem._id, p1: String(e) },
+        ),
       );
     }
   }
@@ -247,7 +277,8 @@ export class SdkBoardPort implements BoardPort {
     expectedName: string,
     name: string,
   ): Promise<Row> {
-    if (this.locks.has(rowId)) throw new Error("这条记录正在保存，请稍候。");
+    if (this.locks.has(rowId))
+      throw new Error(t("Saving record, please wait."));
     this.locks.add(rowId);
     try {
       const tag = await this.plugin.rem.findOne(tagId),
@@ -257,11 +288,11 @@ export class SdkBoardPort implements BoardPort {
         !rem ||
         !(await rem.getTagRems()).some((t) => t._id === tagId)
       )
-        throw new Error("记录已不属于此数据库。");
+        throw new Error(t("Record is no longer in this database."));
       if (rem.text?.some((p) => typeof p !== "string"))
-        throw new Error("名称包含富文本，请打开原笔记编辑。");
+        throw new Error(t("Name contains rich text. Edit it in RemNote."));
       if ((await this.title(rem)) !== expectedName)
-        throw new Error("名称刚被其他操作修改，请刷新。");
+        throw new Error(t("Name was modified elsewhere. Refresh the view."));
       const parent = rem.parent;
       await rem.setText([name]);
       const fresh = await this.plugin.rem.findOne(rowId);
@@ -270,7 +301,7 @@ export class SdkBoardPort implements BoardPort {
         (await this.title(fresh)) !== name ||
         fresh.parent !== parent
       )
-        throw new Error("名称写入后未能确认结果。");
+        throw new Error(t("Could not confirm name update."));
       return this.row(fresh, await this.fields(tag));
     } finally {
       this.locks.delete(rowId);
@@ -278,7 +309,7 @@ export class SdkBoardPort implements BoardPort {
   }
   async open(id: string): Promise<void> {
     const rem = await this.plugin.rem.findOne(id);
-    if (!rem) throw new Error("找不到原笔记。");
+    if (!rem) throw new Error(t("Original note not found."));
     await this.plugin.window.openRem(rem);
   }
 }

@@ -1,24 +1,26 @@
-# RemNote Database Board / 数据库看板
+# RemNote Database Board
 
-**在 RemNote 里，享受 Notion 式的数据库操作体验。**
+**The Notion-style database experience, inside RemNote.**
 
-为高级表格提供多视图、筛选排序与看板拖拽，点击记录即可在原生侧栏继续编辑笔记。
+Manage Advanced Tables with multiple views, filters, sorts, and drag-and-drop boards while editing full notes in the native sidebar.
 
-## 核心功能
+## Features
 
-- **多视图**：表格与看板自由切换，每个视图独立保存筛选、排序、分组、显示属性和列宽。
-- **拖拽更新状态**：跨列拖拽卡片，直接更新记录的分组属性；未设置排序时，可自由调整卡片顺序。
-- **快捷表格操作**：点击列名筛选、排序或隐藏属性，拖拽列边缘调整宽度；空单元格留白，点击即可选择或填写。
-- **原生笔记侧栏**：完整呈现标题、标签、属性、图片与正文，边看数据库边编辑笔记。
+- **Multiple views**: Switch between **Table** and **Board** layouts, each with its own saved filters, sorts, grouping, visible properties, and column widths.
+- **Drag-and-drop boards**: Move cards across columns to update their grouping property, or reorder cards freely when no sort is active.
+- **Fast table controls**: Click column headers to filter, sort, or hide properties; drag borders to resize columns; click blank cells to select an option or type a value.
+- **Native note sidebar**: Open any record to edit its title, tags, properties, images, and body alongside your database.
 
-## 开始使用
+## Getting Started
 
-1. **打开看板**：进入高级表格节点，点击标题下的 **打开看板**；内嵌表格先点击 **以完整页面打开**。也可从属性列菜单选择 **以看板打开**。
-2. **配置视图**：切换 **表格 / 看板**，点击 **+** 新建视图，再设置分组、显示属性、筛选和排序。
-3. **编辑记录**：拖拽卡片或点击单元格修改属性，点击记录在原生侧栏编辑正文，点击 **新建** 添加记录。
+1. **Open a board**: Zoom into an Advanced Table and click **Open board** under the title (for inline tables, click **Open as full page** first), or choose **Open as board** from a property column menu.
+2. **Configure views**: Switch between **Table** and **Board**, click **+** to add a view, and open **View settings** to configure grouping, visible properties, filters, and sorts.
+3. **Edit records**: Drag cards or click table cells to update properties, click a record to edit the full note in the sidebar, or click **New** to create a record.
 
-下次可通过 RemNote 命令菜单调用 **数据库看板** 或 **打开最近的看板**。
+Reopen your workspace anytime from the RemNote command menu with **Database Board** or **Open recent board**.
 
-## 项目与反馈
+Switch between English and Simplified Chinese in **RemNote Settings > Plugin Settings > Database Board > Language**.
 
-[插件页面](https://www.remnote.com/plugins/fanvane-database-board) · [反馈问题](https://github.com/Shawn-Bo/remnote-database-board/issues) · [更新记录](https://github.com/Shawn-Bo/remnote-database-board/blob/main/CHANGELOG.md) · [开发与部署](https://github.com/Shawn-Bo/remnote-database-board/blob/main/docs/development.md)
+## Links
+
+[Plugin Page](https://www.remnote.com/plugins/fanvane-database-board) · [Report an Issue](https://github.com/Shawn-Bo/remnote-database-board/issues) · [Changelog](https://github.com/Shawn-Bo/remnote-database-board/blob/main/CHANGELOG.md) · [Development & Deployment](https://github.com/Shawn-Bo/remnote-database-board/blob/main/docs/development.md)

@@ -1,3 +1,4 @@
+import { t } from "./i18n";
 import React, { useEffect, useRef, useState } from "react";
 import type { Config, Snapshot } from "./model";
 import { Icon, fieldIcon } from "./Icons";
@@ -6,6 +7,7 @@ import {
   NAME,
   newId,
   newView,
+  viewName,
   type DatabaseView,
   type DatabaseViews,
   type FilterRule,
@@ -57,7 +59,11 @@ export function ViewToolbar({
   return (
     <>
       <div className="database-toolbar">
-        <div className="view-tabs" role="tablist" aria-label="数据库视图">
+        <div
+          className="view-tabs"
+          role="tablist"
+          aria-label={t("Database views")}
+        >
           {state.views.map((v) => (
             <button
               key={v.id}
@@ -69,13 +75,13 @@ export function ViewToolbar({
               onDoubleClick={() => setPanel("settings")}
             >
               <Icon name={v.layout} />
-              {v.name}
+              {viewName(v)}
             </button>
           ))}
           <button
             className="icon-button add-view"
-            title="添加视图"
-            aria-label="添加视图"
+            title={t("Add view")}
+            aria-label={t("Add view")}
             onClick={() => toggle("add")}
             disabled={disabled}
           >
@@ -85,20 +91,22 @@ export function ViewToolbar({
         <div className="database-actions">
           <button
             className={`icon-button ${view.filters.length ? "applied" : ""}`}
-            title="筛选"
-            aria-label="筛选"
+            title={t("Filter")}
+            aria-label={t("Filter")}
             aria-expanded={panel === "filters"}
             onClick={() => toggle("filters")}
           >
             <Icon name="filter" />
             {!!view.filters.length && (
-              <span className="sr-only">{view.filters.length} 个条件</span>
+              <span className="sr-only">
+                {view.filters.length} {t(" filters")}
+              </span>
             )}
           </button>
           <button
             className={`icon-button ${view.sorts.length ? "applied" : ""}`}
-            title="排序"
-            aria-label="排序"
+            title={t("Sort")}
+            aria-label={t("Sort")}
             aria-expanded={panel === "sorts"}
             onClick={() => toggle("sorts")}
           >
@@ -106,16 +114,16 @@ export function ViewToolbar({
           </button>
           <button
             className="icon-button"
-            title="搜索"
-            aria-label="搜索"
+            title={t("Search")}
+            aria-label={t("Search")}
             onClick={() => setSearchOpen((v) => !v)}
           >
             <Icon name="search" />
           </button>
           <button
             className="icon-button"
-            title="刷新"
-            aria-label="刷新"
+            title={t("Refresh")}
+            aria-label={t("Refresh")}
             disabled={disabled}
             onClick={onRefresh}
           >
@@ -123,8 +131,8 @@ export function ViewToolbar({
           </button>
           <button
             className={`icon-button ${panel === "settings" ? "active" : ""}`}
-            title="视图设置"
-            aria-label="视图设置"
+            title={t("View settings")}
+            aria-label={t("View settings")}
             aria-expanded={!!panel}
             onClick={() => toggle("settings")}
           >
@@ -136,7 +144,7 @@ export function ViewToolbar({
               disabled={disabled}
               onClick={onCreate}
             >
-              新建
+              {t("New")}
             </button>
           )}
         </div>
@@ -146,14 +154,14 @@ export function ViewToolbar({
           <Icon name="search" />
           <input
             autoFocus
-            aria-label="搜索记录"
-            placeholder="搜索数据库…"
+            aria-label={t("Search records")}
+            placeholder={t("Search database…")}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
           <button
             className="icon-button"
-            aria-label="关闭搜索"
+            aria-label={t("Close search")}
             onClick={() => {
               setSearch("");
               setSearchOpen(false);
@@ -173,16 +181,16 @@ export function ViewToolbar({
             >
               <Icon name="filter" />
               {f.fieldId === NAME
-                ? "名称"
+                ? t("Name")
                 : (snapshot.fields.find((p) => p.id === f.fieldId)?.name ??
-                  "属性已删除")}
+                  t("Deleted property"))}
               <Icon name="down" />
             </button>
           ))}
           {view.sorts.length > 0 && (
             <button className="query-chip" onClick={() => setPanel("sorts")}>
               <Icon name="sort" />
-              {view.sorts.length} 项排序
+              {view.sorts.length} {t(" sorts")}
             </button>
           )}
           <button
@@ -196,7 +204,7 @@ export function ViewToolbar({
               })
             }
           >
-            清除
+            {t("Clear")}
           </button>
         </div>
       )}
@@ -245,17 +253,17 @@ export function ViewPanel({
       filters: view.filters.map((f) => (f.id === id ? { ...f, ...next } : f)),
     });
   const labels: Record<Exclude<Panel, null>, string> = {
-    settings: "视图设置",
-    filters: "筛选",
-    sorts: "排序",
-    group: "分组",
-    properties: "属性是否可见",
-    layout: "布局",
-    add: "新建视图",
-    connection: "数据源",
+    settings: t("View settings"),
+    filters: t("Filter"),
+    sorts: t("Sort"),
+    group: t("Group"),
+    properties: t("Property visibility"),
+    layout: t("Layout"),
+    add: t("New view"),
+    connection: t("Data source"),
   };
   const fields = [
-    { id: NAME, name: "名称", type: "text", choices: [] },
+    { id: NAME, name: t("Name"), type: "text", choices: [] },
     ...snapshot.fields,
   ];
   const reorder = <T,>(values: T[], index: number, delta: number) => {
@@ -282,7 +290,7 @@ export function ViewPanel({
         {panel !== "settings" && (
           <button
             className="icon-button back"
-            aria-label="返回视图设置"
+            aria-label={t("Back to view settings")}
             onClick={() => setPanel("settings")}
           >
             <Icon name="chevron" />
@@ -291,7 +299,7 @@ export function ViewPanel({
         <strong>{labels[panel]}</strong>
         <button
           className="icon-button"
-          aria-label="关闭设置"
+          aria-label={t("Close settings")}
           onClick={() => setPanel(null)}
         >
           <Icon name="close" />
@@ -303,46 +311,48 @@ export function ViewPanel({
             <label className="view-name-input">
               <Icon name={view.layout} />
               <input
-                aria-label="视图名称"
-                value={view.name}
-                onChange={(e) => patch({ name: e.target.value })}
+                aria-label={t("View name")}
+                value={viewName(view)}
+                onChange={(e) =>
+                  patch({ name: e.target.value, autoName: false })
+                }
               />
             </label>
             {menu(
               "layout",
               view.layout,
-              "布局",
-              LAYOUTS.find((l) => l.id === view.layout)?.name,
+              t("Layout"),
+              t(LAYOUTS.find((l) => l.id === view.layout)?.name ?? ""),
             )}
             {menu(
               "properties",
               "eye",
-              "属性是否可见",
+              t("Property visibility"),
               `${view.visibleFieldIds.length + 1}`,
             )}
             {menu(
               "filters",
               "filter",
-              "筛选",
+              t("Filter"),
               view.filters.length ? `${view.filters.length}` : undefined,
             )}
             {menu(
               "sorts",
               "sort",
-              "排序",
+              t("Sort"),
               view.sorts.length ? `${view.sorts.length}` : undefined,
             )}
             {view.layout === "board" &&
               menu(
                 "group",
                 "board",
-                "分组",
+                t("Group"),
                 snapshot.fields.find((f) => f.id === view.groupFieldId)?.name ||
-                  "无",
+                  t("None"),
               )}
             <hr />
-            <div className="panel-caption">数据源设置</div>
-            {menu("connection", "table", "来源", snapshot.name)}
+            <div className="panel-caption">{t("Data source settings")}</div>
+            {menu("connection", "table", t("Source"), snapshot.name)}
             <hr />
             <button
               className="settings-row"
@@ -350,7 +360,8 @@ export function ViewPanel({
                 const copy = {
                   ...structuredClone(view),
                   id: newId(),
-                  name: `${view.name} 副本`,
+                  name: t("{p0} copy", { p0: viewName(view) }),
+                  autoName: false,
                 };
                 onChange({
                   ...state,
@@ -360,7 +371,7 @@ export function ViewPanel({
               }}
             >
               <Icon name="page" />
-              复制视图
+              {t("Duplicate view")}
             </button>
             <button
               className="settings-row danger"
@@ -372,7 +383,7 @@ export function ViewPanel({
               }}
             >
               <Icon name="close" />
-              删除视图
+              {t("Delete view")}
             </button>
           </>
         )}
@@ -393,8 +404,8 @@ export function ViewPanel({
             <input
               className="panel-input"
               autoFocus
-              placeholder="视图名称"
-              aria-label="新视图名称"
+              placeholder={t("View name")}
+              aria-label={t("New view name")}
               value={newName}
               onChange={(e) => setNewName(e.target.value)}
             />
@@ -408,12 +419,12 @@ export function ViewPanel({
                   onClick={() => setNewLayout(l.id)}
                 >
                   <Icon name={l.id} />
-                  {l.name}
+                  {t(l.name)}
                 </button>
               ))}
             </div>
             <button className="new-button panel-submit" type="submit">
-              创建
+              {t("Create")}
             </button>
           </form>
         )}
@@ -436,16 +447,16 @@ export function ViewPanel({
                   }
                 >
                   <Icon name={l.id} />
-                  {l.name}
+                  {t(l.name)}
                 </button>
               ))}
             </div>
             {view.layout === "board" ? (
               <>
                 <label className="setting-label">
-                  卡片大小
+                  {t("Card size")}
                   <select
-                    aria-label="卡片大小"
+                    aria-label={t("Card size")}
                     value={view.cardSize}
                     onChange={(e) =>
                       patch({
@@ -453,19 +464,19 @@ export function ViewPanel({
                       })
                     }
                   >
-                    <option value="small">小</option>
-                    <option value="medium">中</option>
-                    <option value="large">大</option>
+                    <option value="small">{t("Small")}</option>
+                    <option value="medium">{t("Medium")}</option>
+                    <option value="large">{t("Large")}</option>
                   </select>
                 </label>
                 <label className="setting-label">
-                  卡片预览
+                  {t("Card preview")}
                   <select
-                    aria-label="卡片预览"
+                    aria-label={t("Card preview")}
                     value={view.coverFieldId}
                     onChange={(e) => patch({ coverFieldId: e.target.value })}
                   >
-                    <option value="">无</option>
+                    <option value="">{t("None")}</option>
                     {snapshot.fields.map((f) => (
                       <option key={f.id} value={f.id}>
                         {f.name}
@@ -476,7 +487,7 @@ export function ViewPanel({
               </>
             ) : (
               <label className="setting-label">
-                自动换行
+                {t("Wrap text")}
                 <input
                   type="checkbox"
                   checked={view.wrapCells}
@@ -488,10 +499,10 @@ export function ViewPanel({
         )}
         {panel === "properties" && (
           <>
-            <div className="panel-caption">在当前视图中显示</div>
+            <div className="panel-caption">{t("Shown in view")}</div>
             <div className="property-visibility">
               <span>Aa</span>
-              <span>名称</span>
+              <span>{t("Name")}</span>
               <Icon name="eye" />
             </div>
             {[
@@ -511,7 +522,7 @@ export function ViewPanel({
                     <button
                       className="icon-button"
                       disabled={index === 0}
-                      aria-label={`上移${field.name}`}
+                      aria-label={t("Move {p0} up", { p0: field.name })}
                       onClick={() =>
                         patch({
                           visibleFieldIds: reorder(
@@ -527,7 +538,9 @@ export function ViewPanel({
                   )}
                   <button
                     className={`icon-button ${index < 0 ? "muted" : ""}`}
-                    aria-label={`${index >= 0 ? "隐藏" : "显示"}${field.name}`}
+                    aria-label={t(index >= 0 ? "Hide {p0}" : "Show {p0}", {
+                      p0: field.name,
+                    })}
                     aria-pressed={index >= 0}
                     onClick={() =>
                       patch({
@@ -548,18 +561,18 @@ export function ViewPanel({
         {panel === "filters" && (
           <>
             <div className="filter-join">
-              <span>显示满足</span>
+              <span>{t("Show records matching")}</span>
               <select
-                aria-label="条件组合"
+                aria-label={t("Filter match mode")}
                 value={view.filterMode}
                 onChange={(e) =>
                   patch({ filterMode: e.target.value as "all" | "any" })
                 }
               >
-                <option value="all">所有</option>
-                <option value="any">任一</option>
+                <option value="all">{t("all")}</option>
+                <option value="any">{t("any")}</option>
               </select>
-              <span>条件的记录</span>
+              <span>{t("of the conditions")}</span>
             </div>
             {view.filters.map((rule, index) => {
               const field = fields.find((f) => f.id === rule.fieldId);
@@ -570,7 +583,7 @@ export function ViewPanel({
                 <div className="filter-rule" key={rule.id}>
                   <div className="rule-top">
                     <select
-                      aria-label={`筛选属性 ${index + 1}`}
+                      aria-label={t("Filter property {p0}", { p0: index + 1 })}
                       value={rule.fieldId}
                       onChange={(e) =>
                         patchFilter(rule.id, {
@@ -581,7 +594,9 @@ export function ViewPanel({
                       }
                     >
                       {!field && (
-                        <option value={rule.fieldId}>属性已删除</option>
+                        <option value={rule.fieldId}>
+                          {t("Deleted property")}
+                        </option>
                       )}
                       {fields.map((f) => (
                         <option key={f.id} value={f.id}>
@@ -590,7 +605,7 @@ export function ViewPanel({
                       ))}
                     </select>
                     <select
-                      aria-label={`筛选条件 ${index + 1}`}
+                      aria-label={t("Filter condition {p0}", { p0: index + 1 })}
                       value={rule.operator}
                       onChange={(e) =>
                         patchFilter(rule.id, {
@@ -599,24 +614,26 @@ export function ViewPanel({
                         })
                       }
                     >
-                      <option value="is">是</option>
-                      <option value="is_not">不是</option>
-                      <option value="contains">包含</option>
-                      <option value="not_contains">不包含</option>
-                      <option value="empty">为空</option>
-                      <option value="not_empty">不为空</option>
+                      <option value="is">{t("is")}</option>
+                      <option value="is_not">{t("is not")}</option>
+                      <option value="contains">{t("contains")}</option>
+                      <option value="not_contains">
+                        {t("does not contain")}
+                      </option>
+                      <option value="empty">{t("is empty")}</option>
+                      <option value="not_empty">{t("is not empty")}</option>
                       {["number", "date"].includes(field?.type ?? "") && (
                         <>
-                          <option value="gt">大于</option>
-                          <option value="lt">小于</option>
-                          <option value="gte">大于等于</option>
-                          <option value="lte">小于等于</option>
+                          <option value="gt">{t("is greater than")}</option>
+                          <option value="lt">{t("is less than")}</option>
+                          <option value="gte">{t("is at least")}</option>
+                          <option value="lte">{t("is at most")}</option>
                         </>
                       )}
                     </select>
                     <button
                       className="icon-button"
-                      aria-label={`移除筛选 ${index + 1}`}
+                      aria-label={t("Remove filter {p0}", { p0: index + 1 })}
                       onClick={() => removeFilter(rule.id)}
                     >
                       <Icon name="close" />
@@ -626,13 +643,13 @@ export function ViewPanel({
                     (choice ? (
                       <select
                         className="rule-value"
-                        aria-label={`筛选值 ${index + 1}`}
+                        aria-label={t("Filter value {p0}", { p0: index + 1 })}
                         value={rule.value}
                         onChange={(e) =>
                           patchFilter(rule.id, { value: e.target.value })
                         }
                       >
-                        <option value="">选择选项…</option>
+                        <option value="">{t("Select option…")}</option>
                         {field?.choices.map((c) => (
                           <option key={c.id} value={c.id}>
                             {c.name}
@@ -642,7 +659,7 @@ export function ViewPanel({
                     ) : (
                       <input
                         className="rule-value"
-                        aria-label={`筛选值 ${index + 1}`}
+                        aria-label={t("Filter value {p0}", { p0: index + 1 })}
                         type={
                           field?.type === "date"
                             ? "date"
@@ -650,7 +667,7 @@ export function ViewPanel({
                               ? "number"
                               : "text"
                         }
-                        placeholder="输入值…"
+                        placeholder={t("Enter value…")}
                         value={rule.value}
                         onChange={(e) =>
                           patchFilter(rule.id, { value: e.target.value })
@@ -677,17 +694,17 @@ export function ViewPanel({
               }
             >
               <Icon name="plus" />
-              添加筛选条件
+              {t("Add filter")}
             </button>
           </>
         )}
         {panel === "sorts" && (
           <>
-            <div className="panel-caption">按顺序应用排序</div>
+            <div className="panel-caption">{t("Sort in order")}</div>
             {view.sorts.map((sort, index) => (
               <div className="sort-rule" key={sort.id}>
                 <select
-                  aria-label={`排序属性 ${index + 1}`}
+                  aria-label={t("Sort property {p0}", { p0: index + 1 })}
                   value={sort.fieldId}
                   onChange={(e) =>
                     patch({
@@ -700,7 +717,9 @@ export function ViewPanel({
                   }
                 >
                   {!fields.some((f) => f.id === sort.fieldId) && (
-                    <option value={sort.fieldId}>属性已删除</option>
+                    <option value={sort.fieldId}>
+                      {t("Deleted property")}
+                    </option>
                   )}
                   {fields.map((f) => (
                     <option key={f.id} value={f.id}>
@@ -709,7 +728,7 @@ export function ViewPanel({
                   ))}
                 </select>
                 <select
-                  aria-label={`排序方向 ${index + 1}`}
+                  aria-label={t("Sort direction {p0}", { p0: index + 1 })}
                   value={sort.direction}
                   onChange={(e) =>
                     patch({
@@ -724,12 +743,12 @@ export function ViewPanel({
                     })
                   }
                 >
-                  <option value="asc">升序</option>
-                  <option value="desc">降序</option>
+                  <option value="asc">{t("Ascending")}</option>
+                  <option value="desc">{t("Descending")}</option>
                 </select>
                 <button
                   className="icon-button"
-                  aria-label={`上移排序 ${index + 1}`}
+                  aria-label={t("Move sort {p0} up", { p0: index + 1 })}
                   disabled={index === 0}
                   onClick={() =>
                     patch({ sorts: reorder(view.sorts, index, -1) })
@@ -739,7 +758,7 @@ export function ViewPanel({
                 </button>
                 <button
                   className="icon-button"
-                  aria-label={`移除排序 ${index + 1}`}
+                  aria-label={t("Remove sort {p0}", { p0: index + 1 })}
                   onClick={() =>
                     patch({ sorts: view.sorts.filter((s) => s.id !== sort.id) })
                   }
@@ -760,14 +779,14 @@ export function ViewPanel({
               }
             >
               <Icon name="plus" />
-              添加排序
+              {t("Add sort")}
             </button>
             {view.sorts.length > 0 && (
               <button
                 className="settings-row muted"
                 onClick={() => patch({ sorts: [] })}
               >
-                删除所有排序
+                {t("Remove all sorts")}
               </button>
             )}
           </>
@@ -775,9 +794,9 @@ export function ViewPanel({
         {panel === "group" && (
           <>
             <label className="setting-label">
-              分组依据
+              {t("Group by")}
               <select
-                aria-label="分组依据"
+                aria-label={t("Group by")}
                 value={view.groupFieldId}
                 onChange={(e) =>
                   patch({
@@ -787,7 +806,7 @@ export function ViewPanel({
                   })
                 }
               >
-                <option value="">不分组</option>
+                <option value="">{t("None")}</option>
                 {snapshot.fields.map((f) => (
                   <option key={f.id} value={f.id}>
                     {f.name}
@@ -796,7 +815,7 @@ export function ViewPanel({
               </select>
             </label>
             <label className="setting-label">
-              隐藏空组
+              {t("Hide empty groups")}
               <input
                 type="checkbox"
                 checked={view.hideEmptyGroups}
@@ -804,7 +823,7 @@ export function ViewPanel({
               />
             </label>
             <label className="setting-label">
-              为分组着色
+              {t("Color groups")}
               <input
                 type="checkbox"
                 checked={view.colorColumns}
@@ -816,7 +835,10 @@ export function ViewPanel({
               <button
                 className="settings-row"
                 key={g.id}
-                aria-label={`${view.hiddenGroups.includes(g.id) ? "显示" : "隐藏"}分组 ${g.name}`}
+                aria-label={t("{p0} group {p1}", {
+                  p0: view.hiddenGroups.includes(g.id) ? t("Show") : t("Hide"),
+                  p1: g.name,
+                })}
                 onClick={() =>
                   patch({
                     hiddenGroups: view.hiddenGroups.includes(g.id)
