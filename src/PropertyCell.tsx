@@ -37,7 +37,7 @@ export function PropertyCell({
     const key = groupKey(cell, field),
       index = field.choices.findIndex((c) => c.id === key);
     return (
-      <span className={`select-cell tone-${index < 0 ? 0 : (index % 8) + 1}`}>
+      <span className={`select-cell tone-${index < 0 ? 0 : (index % 8) + 1}${key === EMPTY ? " is-empty" : ""}`}>
         <select
           aria-label={field.name}
           disabled={disabled}
