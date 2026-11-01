@@ -46,7 +46,7 @@ export function PropertyCell({
             void onSave(cell, cellForChoice(e.target.value, field))
           }
         >
-          <option value={EMPTY}>空</option>
+          <option value={EMPTY} aria-label="清除选择">{key === EMPTY ? "" : "清除选择"}</option>
           {field.choices.map((c) => (
             <option key={c.id} value={c.id}>
               {c.name}
@@ -63,8 +63,9 @@ export function PropertyCell({
   }
   if (!["text", "0", "number", "url"].includes(field.type) || cell.refs.length)
     return (
-      <button className="cell-readonly" onClick={onOpen} title="在原笔记中编辑">
-        {cell.text || <span className="muted">空</span>}
+      <button className="cell-readonly" onClick={onOpen} title="在原笔记中编辑"
+        aria-label={`在原笔记中编辑${field.name}`}>
+        {cell.text}
       </button>
     );
   const save = async () => {
@@ -118,7 +119,7 @@ export function PropertyCell({
         setEditing(true);
       }}
     >
-      {cell.text || <span className="cell-empty">空</span>}
+      {cell.text}
     </button>
   );
 }
