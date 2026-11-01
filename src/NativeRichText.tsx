@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   RichText,
-  RemHierarchyEditorTree,
+  DocumentViewer,
   type RNPlugin,
   type RichTextInterface,
 } from "@remnote/plugin-sdk";
@@ -228,22 +228,16 @@ export function NativeRichText({
   );
 }
 
-// The editor operates on the original Rem and its descendants. No plugin
-// copy, textarea serializer, or manual note write-back is involved.
+// Use the full native page, including its title, tags, properties and children.
+// RemHierarchyEditorTree only renders the child outline. DocumentViewer owns
+// scrolling inside its bounded viewport; no copied body or save-back is used.
 export function NativeNote({ remId }: { remId: string }) {
-  const sheet = React.useContext(ClipContext);
-  const host = useRef<HTMLDivElement>(null);
-  const [id] = useState(() => `note-${newId()}`);
-  useEffect(() => {
-    if (host.current && sheet) return sheet.add(id, host.current);
-  }, [id, sheet]);
   return (
-    <div ref={host} className="native-note-editor">
-      <RemHierarchyEditorTree
-        remId={remId}
+    <div className="native-note-editor">
+      <DocumentViewer
+        documentId={remId}
         width="100%"
         height="100%"
-        className={sheet ? `${sheet.prefix} ${id}` : undefined}
       />
     </div>
   );
