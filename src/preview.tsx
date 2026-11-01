@@ -7,10 +7,15 @@ import { sameCell } from "./model";
 import initial from "./demo-config.json";
 import fixture from "./demo-snapshot.json";
 import "./board.css";
+import { longGroups } from "./preview-scenarios";
 // Standalone demo backed by session storage.
-const storageKey = "remnote-board-preview:v2";
-const viewKey = "remnote-board-preview-views:v2";
+const scenario = new URLSearchParams(location.search).get("scenario");
+const suffix = scenario === "long-groups" ? ":long-groups" : "";
+const storageKey = "remnote-board-preview:v2" + suffix;
+const viewKey = "remnote-board-preview-views:v2" + suffix;
 let data: Snapshot = structuredClone(fixture);
+const scenarioConfig =
+  scenario === "long-groups" ? longGroups(data, initial) : initial;
 try {
   const saved = JSON.parse(sessionStorage.getItem(storageKey) ?? "null");
   if (saved?.tagId === fixture.tagId && Array.isArray(saved.rows)) data = saved;
@@ -54,7 +59,7 @@ try {
 } catch {}
 const start = new URLSearchParams(location.search).has("setup")
   ? { tagId: "" }
-  : (savedConfig ?? initial);
+  : (savedConfig ?? scenarioConfig);
 
 ReactDOM.render(
   <Board

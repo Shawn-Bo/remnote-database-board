@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.3.8 · 2026-11-01
+
+- **Readable hidden groups**: Replaced overflowing vertical collapsed columns with a horizontal list of names, counts, and restore controls. Previously collapsed groups keep their saved visibility.
+- **Group menu**: Create a page in a group, hide the group, or open its settings from the column menu. Hidden groups still accept dragged cards.
+- **Clean product commands**: Keep only board-opening commands in RemNote; enforce developer-preview isolation during builds and an explicit command allowlist in tests.
+- **Board product standard**: Documented current capabilities, gaps, priorities, and realistic acceptance scenarios.
+
 ## 0.3.7 · 2026-11-01
 
 - **Automatic desktop updates**: Check GitHub Releases on startup and hourly, verify downloads, switch to the new plugin, and remove older update caches.

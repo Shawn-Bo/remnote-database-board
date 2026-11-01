@@ -53,6 +53,22 @@ export interface DatabaseView {
 export const viewName = (view: DatabaseView) =>
   view.autoName ? t(view.layout === "table" ? "Table" : "Board") : view.name;
 
+// Earlier versions collapsed groups into vertical strips. Keep those saved
+// choices, but present them with hidden groups using readable horizontal names.
+export const isGroupHidden = (view: DatabaseView, id: string) =>
+  view.hiddenGroups.includes(id) || view.collapsedGroups.includes(id);
+
+export function groupVisibility(
+  view: DatabaseView,
+  id: string,
+  hidden: boolean,
+) {
+  const ids = new Set([...view.hiddenGroups, ...view.collapsedGroups]);
+  if (hidden) ids.add(id);
+  else ids.delete(id);
+  return { hiddenGroups: [...ids], collapsedGroups: [] };
+}
+
 export interface DatabaseViews {
   version: 1;
   activeViewId: string;

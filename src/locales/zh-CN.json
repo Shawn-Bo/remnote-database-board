@@ -1,4 +1,11 @@
 {
+  "{p0} records": "{p0} 条记录",
+  "Group options: {p0}": "分组选项：{p0}",
+  "Hide group": "隐藏分组",
+  "Group settings": "分组设置",
+  "Hidden groups": "隐藏分组",
+  "Show all": "全部显示",
+  "Show group {p0}": "显示分组 {p0}",
   "View settings not saved: {p0}": "视图设置尚未保存：{p0}",
   "Property": "属性",
   "{p0} updated": "{p0}已更新",

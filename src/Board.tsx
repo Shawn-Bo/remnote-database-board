@@ -11,6 +11,8 @@ import {
   moveValue,
   placeRow,
   openBoardView,
+  isGroupHidden,
+  groupVisibility,
   NAME,
   newId,
   type BoardOpening,
@@ -20,6 +22,7 @@ import { ViewToolbar, ViewPanel, type Panel } from "./ViewControls";
 import { Icon, fieldIcon } from "./Icons";
 import { PropertyCell } from "./PropertyCell";
 import { TableColumnHeader } from "./TableColumnHeader";
+import { BoardGroupHeader } from "./BoardGroupHeader";
 
 type ColumnResize = { viewId: string; fieldId: string; width: number };
 
@@ -288,8 +291,12 @@ export function Board({
       .filter((f): f is NonNullable<typeof f> => !!f) ?? [];
   const columns = allGroups.filter(
     (g) =>
-      !activeView?.hiddenGroups.includes(g.id) &&
+      !!activeView &&
+      !isGroupHidden(activeView, g.id) &&
       (!activeView?.hideEmptyGroups || g.rows.length > 0),
+  );
+  const hiddenColumns = allGroups.filter(
+    (g) => !!activeView && isGroupHidden(activeView, g.id),
   );
   const selected = snapshot?.rows.find((r) => r.id === selectedId);
   const cellContent = (
@@ -828,67 +835,112 @@ export function Board({
                         <section
                           key={column.id}
                           data-column-id={column.id}
-                          className={`column tone-${column.choiceIndex < 0 ? 0 : (column.choiceIndex % 8) + 1} ${over === column.id ? "drag-over" : ""} ${activeView.collapsedGroups.includes(column.id) ? "collapsed" : ""}`}
+                          className={`column tone-${column.choiceIndex < 0 ? 0 : (column.choiceIndex % 8) + 1} ${over === column.id ? "drag-over" : ""}`}
                         >
-                          <div className="column-heading">
-                            <button
-                              className="group-label"
-                              onClick={() =>
-                                patchView({
-                                  collapsedGroups:
-                                    activeView.collapsedGroups.includes(
-                                      column.id,
-                                    )
-                                      ? activeView.collapsedGroups.filter(
-                                          (id) => id !== column.id,
-                                        )
-                                      : [
-                                          ...activeView.collapsedGroups,
-                                          column.id,
-                                        ],
-                                })
-                              }
-                              aria-expanded={
-                                !activeView.collapsedGroups.includes(column.id)
-                              }
-                            >
-                              <span>{column.name}</span>
-                              <span className="count">
-                                {column.rows.length}
-                              </span>
-                            </button>
-                            <button
-                              className="icon-button group-menu"
-                              aria-label={t("Set group {p0}", {
-                                p0: column.name,
-                              })}
-                              onClick={() => setPanel("group")}
-                            >
-                              <Icon name="more" />
-                            </button>
-                          </div>
-                          {!activeView.collapsedGroups.includes(column.id) && (
-                            <div className="card-list">
-                              {column.rows.map(card)}
-                              {port.create && column.id !== UNKNOWN && (
-                                <button
-                                  className="new-card"
-                                  onClick={() =>
+                          <BoardGroupHeader
+                            name={column.name}
+                            count={column.rows.length}
+                            disabled={
+                              pending.size > 0 ||
+                              loading ||
+                              creating ||
+                              !!dragging
+                            }
+                            onHide={() =>
+                              patchView(
+                                groupVisibility(activeView, column.id, true),
+                              )
+                            }
+                            onSettings={() => setPanel("group")}
+                            onCreate={
+                              port.create && column.id !== UNKNOWN
+                                ? () =>
                                     setNewRecord({
                                       name: "",
                                       group: canMove ? column.id : undefined,
                                     })
-                                  }
-                                >
-                                  <Icon name="plus" />
-                                  {t("New page")}
-                                </button>
-                              )}
-                            </div>
-                          )}
+                                : undefined
+                            }
+                          />
+                          <div className="card-list">
+                            {column.rows.map(card)}
+                            {port.create && column.id !== UNKNOWN && (
+                              <button
+                                className="new-card"
+                                onClick={() =>
+                                  setNewRecord({
+                                    name: "",
+                                    group: canMove ? column.id : undefined,
+                                  })
+                                }
+                              >
+                                <Icon name="plus" />
+                                {t("New page")}
+                              </button>
+                            )}
+                          </div>
                         </section>
                       ))}
-                      {!columns.length && (
+                      {hiddenColumns.length > 0 && (
+                        <section
+                          className="hidden-groups"
+                          aria-label={t("Hidden groups")}
+                        >
+                          <header className="hidden-groups-heading">
+                            <span>{t("Hidden groups")}</span>
+                            <button
+                              className="subtle-button"
+                              disabled={pending.size > 0 || !!dragging}
+                              onClick={() =>
+                                patchView({
+                                  hiddenGroups: [],
+                                  collapsedGroups: [],
+                                  hideEmptyGroups: false,
+                                })
+                              }
+                            >
+                              {t("Show all")}
+                            </button>
+                          </header>
+                          {hiddenColumns.map((column) => (
+                            <div
+                              key={column.id}
+                              data-column-id={column.id}
+                              className={`hidden-group tone-${column.choiceIndex < 0 ? 0 : (column.choiceIndex % 8) + 1} ${over === column.id ? "drag-over" : ""}`}
+                            >
+                              <button
+                                className="hidden-group-label"
+                                title={column.name}
+                                aria-label={t("Show group {p0}", {
+                                  p0: column.name,
+                                })}
+                                disabled={pending.size > 0 || !!dragging}
+                                onClick={() =>
+                                  patchView({
+                                    ...groupVisibility(
+                                      activeView,
+                                      column.id,
+                                      false,
+                                    ),
+                                    ...(column.rows.length
+                                      ? {}
+                                      : { hideEmptyGroups: false }),
+                                  })
+                                }
+                              >
+                                <span className="hidden-group-name">
+                                  {column.name}
+                                </span>
+                                <span className="count">
+                                  {column.rows.length}
+                                </span>
+                                <Icon name="eye" />
+                              </button>
+                            </div>
+                          ))}
+                        </section>
+                      )}
+                      {!columns.length && !hiddenColumns.length && (
                         <div className="empty-state">
                           {t("No matching records.")}
                           <button

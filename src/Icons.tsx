@@ -63,6 +63,12 @@ const paths: Record<string, React.ReactNode> = {
       <circle cx="10" cy="10" r="2.5" />
     </>
   ),
+  "eye-off": (
+    <>
+      <path d="M1 10s3-6 9-6 9 6 9 6-3 6-9 6-9-6-9-6Z" />
+      <path d="m3 3 14 14" />
+    </>
+  ),
   page: (
     <>
       <path d="M4 2h8l4 4v12H4Z" />

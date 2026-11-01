@@ -1,8 +1,17 @@
 # Notion-Style Database Experience: Validation Record
 
-Prior validated release: 0.3.5 (2026-11-01) on RemNote 1.29.1. Current release: 0.3.7 (2026-11-01).
+Prior native-client validation: 0.3.5 (2026-11-01) on RemNote 1.29.1. Current release: 0.3.8 (2026-11-01).
 
 Modeled on [Notion Views, Filters, and Sorts](https://www.notion.com/help/views-filters-and-sorts), [Boards](https://www.notion.com/help/boards), and [Tables](https://www.notion.com/help/tables), implementing **Table** and **Board** layouts, per-view configuration, direct property editing, and the native note sidebar.
+
+## 0.3.8 Group Interaction
+
+- Typechecking, 94 plugin tests, and 23 desktop tests pass. The production build rejects imports of developer fixtures and preview modules.
+- Browser preview verified long labels, seven hidden groups, hide/restore menus, a real pointer drag into a hidden group, updated counts, and persistence after reload.
+- At 390 × 844, horizontal scrolling reaches the hidden groups; the page itself does not overflow horizontally; group menus and restore controls are at least 44px high.
+- Regression tests cover legacy collapsed-group settings, CJK labels, restoring empty groups, and preserving the note parent and unrelated properties when dropping into a hidden group.
+- Installed 0.3.8 locally, verified all 15 served file digests, and removed the previous runtime. After reloading RemNote, its command menu exposed only the two board-opening commands for this plugin.
+- This checks layout at a phone-sized viewport, not physical iPhone installation or native mobile editing.
 
 ## 0.3.7 Desktop Updates
 

@@ -8,6 +8,8 @@ import {
   newId,
   newView,
   viewName,
+  isGroupHidden,
+  groupVisibility,
   type DatabaseView,
   type DatabaseViews,
   type FilterRule,
@@ -836,20 +838,19 @@ export function ViewPanel({
                 className="settings-row"
                 key={g.id}
                 aria-label={t("{p0} group {p1}", {
-                  p0: view.hiddenGroups.includes(g.id) ? t("Show") : t("Hide"),
+                  p0: isGroupHidden(view, g.id) ? t("Show") : t("Hide"),
                   p1: g.name,
                 })}
                 onClick={() =>
                   patch({
-                    hiddenGroups: view.hiddenGroups.includes(g.id)
-                      ? view.hiddenGroups.filter((id) => id !== g.id)
-                      : [...view.hiddenGroups, g.id],
+                    ...groupVisibility(view, g.id, !isGroupHidden(view, g.id)),
+                    ...(isGroupHidden(view, g.id) && !g.rows.length
+                      ? { hideEmptyGroups: false }
+                      : {}),
                   })
                 }
               >
-                <Icon
-                  name={view.hiddenGroups.includes(g.id) ? "plus" : "eye"}
-                />
+                <Icon name={isGroupHidden(view, g.id) ? "eye-off" : "eye"} />
                 <span>{g.name}</span>
                 <small>{g.rows.length}</small>
               </button>

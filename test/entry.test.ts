@@ -57,6 +57,13 @@ it("registers a popup instead of a pane, along with both commands and the table 
     "Database Board",
     "Open recent board",
   ]);
+  // Product commands are an explicit allowlist. Fixtures and diagnostics belong
+  // in the standalone developer preview, never in a user's RemNote menu.
+  expect(commands.map((c) => c.id)).toEqual([
+    "open-database-board",
+    "open-last-board",
+  ]);
+  expect(menus.map((m) => m.id)).toEqual(["open-property-as-board"]);
   expect(plugin.app.registerWidget).toHaveBeenCalledWith(
     "table-launcher",
     "DocumentBelowTitle",

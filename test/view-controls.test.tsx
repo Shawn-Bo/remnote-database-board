@@ -10,12 +10,132 @@ import { inferConfig } from "../src/model";
 import fixture from "../src/demo-snapshot.json";
 let root: HTMLDivElement;
 afterEach(() => {
+  vi.restoreAllMocks();
   if (root) {
     act(() => {
       ReactDOM.unmountComponentAtNode(root);
     });
     root.remove();
   }
+});
+
+it("keeps legacy collapsed groups readable, restores them, and saves visibility only", async () => {
+  const data: Snapshot = structuredClone(fixture);
+  const config = inferConfig(data);
+  config.viewState = defaultViews(data, config);
+  const view = config.viewState.views[1];
+  config.viewState.activeViewId = view.id;
+  const field = data.fields.find((f) => f.id === view.groupFieldId)!;
+  const first = field.choices[0];
+  first.name = "需要连贯弹奏八次之后才能继续提升熟练程度的分组";
+  view.collapsedGroups = [first.id];
+  view.hiddenGroups = [field.choices[1].id];
+  const { port, save } = await mount(data, config);
+  expect(root.querySelectorAll(".column.collapsed")).toHaveLength(0);
+  expect(root.querySelectorAll(".hidden-group")).toHaveLength(2);
+  expect(root.querySelector(".hidden-group-name")?.textContent).toBe(
+    first.name,
+  );
+  await click(`Show group ${first.name}`);
+  expect(
+    root.querySelector(`.column[data-column-id="${first.id}"]`),
+  ).not.toBeNull();
+  expect(root.querySelectorAll(".hidden-group")).toHaveLength(1);
+  const saved = save.mock.calls.at(-1)![0] as Config;
+  const storedView = saved.viewState!.views[1];
+  expect(storedView.collapsedGroups).toEqual([]);
+  expect(storedView.hiddenGroups).toEqual([field.choices[1].id]);
+  expect(port.write).not.toHaveBeenCalled();
+});
+
+it("hides a group from its own menu and restores an explicitly hidden empty group", async () => {
+  const { save, port } = await mount();
+  await click("Board");
+  await click("Group options: New");
+  expect(root.querySelector('[role="menu"]')).not.toBeNull();
+  await click("Hide group");
+  expect(root.querySelector('[role="menu"]')).toBeNull();
+  expect(
+    root.querySelector('.hidden-group button[aria-label="Show group New"]'),
+  ).not.toBeNull();
+  await click("Show group New");
+  expect(root.querySelectorAll(".hidden-group")).toHaveLength(0);
+  expect(port.write).not.toHaveBeenCalled();
+  const config = save.mock.calls.at(-1)![0] as Config;
+  const view = config.viewState!.views[1];
+  const empty = { id: "empty-option", name: "New empty stage" };
+  const data: Snapshot = structuredClone(fixture);
+  data.fields.find((f) => f.id === view.groupFieldId)!.choices.push(empty);
+  view.hiddenGroups = [empty.id];
+  view.hideEmptyGroups = true;
+  act(() => {
+    ReactDOM.unmountComponentAtNode(root);
+  });
+  root.remove();
+  await mount(data, config);
+  await click(`Show group ${empty.name}`);
+  expect(
+    root.querySelector(`.column[data-column-id="${empty.id}"]`),
+  ).not.toBeNull();
+});
+
+it("dropping on a hidden group updates its property while preserving the note and its other fields", async () => {
+  const data: Snapshot = structuredClone(fixture);
+  const config = inferConfig(data);
+  config.viewState = defaultViews(data, config);
+  const view = config.viewState.views[1];
+  config.viewState.activeViewId = view.id;
+  const field = data.fields.find((f) => f.id === view.groupFieldId)!;
+  const target = field.choices[1];
+  view.hiddenGroups = [target.id];
+  const before = structuredClone(data.rows[0]);
+  const { port } = await mount(data, config);
+  const card = root.querySelector<HTMLElement>(`[data-row-id="${before.id}"]`)!;
+  card.setPointerCapture = vi.fn();
+  card.hasPointerCapture = () => true;
+  card.releasePointerCapture = vi.fn();
+  const destination = root.querySelector<HTMLElement>(
+    `.hidden-group[data-column-id="${target.id}"]`,
+  )!;
+  vi.spyOn(document, "elementFromPoint").mockReturnValue(destination);
+  await act(async () => {
+    Simulate.pointerDown(card, {
+      button: 0,
+      pointerId: 1,
+      pointerType: "mouse",
+      clientX: 20,
+      clientY: 20,
+      target: card,
+    } as any);
+    Simulate.pointerMove(card, {
+      pointerId: 1,
+      clientX: 120,
+      clientY: 100,
+    } as any);
+  });
+  expect(destination.classList.contains("drag-over")).toBe(true);
+  await act(async () =>
+    Simulate.pointerUp(card, {
+      pointerId: 1,
+      clientX: 120,
+      clientY: 100,
+    } as any),
+  );
+  expect(port.write).toHaveBeenCalledTimes(1);
+  expect(port.write).toHaveBeenCalledWith(
+    expect.objectContaining({
+      rowId: before.id,
+      fieldId: field.id,
+      expected: before.cells[field.id],
+      value: { text: target.name, refs: [target.id] },
+    }),
+  );
+  expect(data.rows[0].parentId).toBe(before.parentId);
+  for (const id of Object.keys(before.cells).filter((id) => id !== field.id))
+    expect(data.rows[0].cells[id]).toEqual(before.cells[id]);
+  expect(
+    root.querySelector(`.hidden-group[data-column-id="${target.id}"]`),
+  ).not.toBeNull();
 });
 async function mount(
   data: Snapshot = structuredClone(fixture),
@@ -24,7 +144,7 @@ async function mount(
 ) {
   const config = stored ?? inferConfig(data);
   if (!config.viewState) config.viewState = defaultViews(data, config);
-  const save = vi.fn(async () => {});
+  const save = vi.fn(async (_config: Config) => {});
   const port: BoardPort = {
     load: async () => structuredClone(data),
     write: vi.fn(async (req) => {
@@ -92,7 +212,7 @@ it("saves independent filters and sorts per view, and restores them after reopen
   expect(port.write).not.toHaveBeenCalled();
 });
 it("opens the requested board grouping while preserving queries and allowing later table navigation", async () => {
-  const data = structuredClone(fixture);
+  const data: Snapshot = structuredClone(fixture);
   const config = inferConfig(data);
   config.viewState = defaultViews(data, config);
   const board = config.viewState.views[1];
@@ -131,7 +251,7 @@ it("opens the requested board grouping while preserving queries and allowing lat
   expect(port.write).not.toHaveBeenCalled();
 });
 it("adds a board when only a saved table remains without replacing that table", async () => {
-  const data = structuredClone(fixture);
+  const data: Snapshot = structuredClone(fixture);
   const config = inferConfig(data);
   config.viewState = defaultViews(data, config);
   config.viewState.views = [config.viewState.views[0]];

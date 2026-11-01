@@ -28,6 +28,10 @@ BOARD_PORT=8083 npm run serve
 
 Open `http://localhost:8083/preview.html`. The `test:browser`, `test:mobile`, and `test:touch` scripts run interactive checks against this preview. Native editor behavior, device installation, and cross-device sync are verified in the RemNote client; see [Validation Record](notion-database-experience.md).
 
+Use `preview.html?scenario=long-groups` for long labels, empty groups, and legacy collapsed-group migration. It uses synthetic English content and separate session storage. The production build rejects fixture, demo, and preview imports; plugin command registration is checked against an explicit product-only allowlist. Reloading the plugin replaces command registrations left by an older loaded version.
+
+See [Board Product Standard](board-product-standard.md) for the capability audit, priorities, and acceptance scenarios.
+
 ## Data & Editing Architecture
 
 - **Data source**: Uses the underlying tag, properties, and records of an Advanced Table. Opening from a table preserves its row scope; **View settings → Data source → Show all database records** expands the scope to all records under the tag. Data source and row scope are shared across views.

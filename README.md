@@ -8,6 +8,7 @@ Manage Advanced Tables with multiple views, filters, sorts, and drag-and-drop bo
 
 - **Multiple views**: Switch between **Table** and **Board** layouts, each with its own saved filters, sorts, grouping, visible properties, and column widths.
 - **Drag-and-drop boards**: Move cards across columns to update their grouping property, or reorder cards freely when no sort is active.
+- **Group controls**: Hide groups in a readable list, drag cards into hidden groups, and restore a group or all groups when needed.
 - **Fast table controls**: Click column headers to filter, sort, or hide properties; drag borders to resize columns; click blank cells to select an option or type a value.
 - **Native note sidebar**: Open any record to edit its title, tags, properties, images, and body alongside your database.
 
@@ -25,4 +26,4 @@ Switch between English and Simplified Chinese in **RemNote Settings > Plugin Set
 
 ## Links
 
-[Plugin Page](https://www.remnote.com/plugins/fanvane-database-board) · [Report an Issue](https://github.com/Shawn-Bo/remnote-database-board/issues) · [Changelog](https://github.com/Shawn-Bo/remnote-database-board/blob/main/CHANGELOG.md) · [Development & Deployment](https://github.com/Shawn-Bo/remnote-database-board/blob/main/docs/development.md)
+[Plugin Page](https://www.remnote.com/plugins/fanvane-database-board) · [Report an Issue](https://github.com/Shawn-Bo/remnote-database-board/issues) · [Changelog](https://github.com/Shawn-Bo/remnote-database-board/blob/main/CHANGELOG.md) · [Development & Deployment](https://github.com/Shawn-Bo/remnote-database-board/blob/main/docs/development.md) · [Board Product Standard](https://github.com/Shawn-Bo/remnote-database-board/blob/main/docs/board-product-standard.md)
