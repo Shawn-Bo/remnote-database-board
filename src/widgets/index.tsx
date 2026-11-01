@@ -37,6 +37,11 @@ export async function activate(plugin: ReactRNPlugin) {
   await plugin.app.registerWidget("board", WidgetLocation.Popup, {
     dimensions: { height: "auto", width: "98vw" },
   });
+  await plugin.app.unregisterWidget("table-launcher", WidgetLocation.DocumentBelowToolbar);
+  await plugin.app.unregisterWidget("table-launcher", WidgetLocation.UnderRemEditor);
+  await plugin.app.registerWidget("table-launcher", WidgetLocation.DocumentBelowTitle, {
+    dimensions: { height: "auto", width: "100%" },
+  });
   const open = async (context: Record<string, unknown>) => {
     await plugin.widget.openPopup("board", context, false);
   };

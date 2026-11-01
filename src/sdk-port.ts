@@ -13,6 +13,7 @@ import type {
   WriteRequest,
 } from "./model";
 import { sameCell } from "./model";
+import { displayRichText } from "./rich-text";
 
 export function references(value: unknown): string[] {
   const result: string[] = [];
@@ -37,23 +38,7 @@ export class SdkBoardPort implements BoardPort {
   private async displayText(
     value: RichTextInterface | undefined,
   ): Promise<string> {
-    // Native percent: 0 means an explicit pixel size, but the SDK input schema
-    // only accepts 5/25/50/100. Omit that unsupported hint in a copy used solely
-    // for text extraction; render the untouched original with RemNote RichText.
-    const input = (value ?? []).map((part) => {
-      if (
-        typeof part === "object" &&
-        part !== null &&
-        part.i === "i" &&
-        part.percent !== undefined &&
-        ![5, 25, 50, 100].includes(part.percent)
-      ) {
-        const { percent, ...image } = part;
-        return image;
-      }
-      return part;
-    });
-    return input.length ? await this.plugin.richText.toString(input) : "";
+    return displayRichText(this.plugin, value);
   }
   private async title(rem: PluginRem): Promise<string> {
     return this.displayText(rem.text);

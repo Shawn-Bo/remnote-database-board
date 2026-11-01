@@ -2,7 +2,8 @@ import { expect, it, vi } from "vitest";
 vi.mock("@remnote/plugin-sdk", () => ({
   declareIndexPlugin: vi.fn(),
   AppEvents: { MessageBroadcast: "messaging.broadcast" },
-  WidgetLocation: { Popup: "Popup" },
+  BuiltInPowerupCodes: { SearchPortal: "sp" },
+  WidgetLocation: { Popup: "Popup", DocumentBelowToolbar: "DocumentBelowToolbar", DocumentBelowTitle: "DocumentBelowTitle", UnderRemEditor: "UnderRemEditor" },
   PluginCommandMenuLocation: { PropertyConfigMenu: "PropertyConfigMenu" },
 }));
 import { activate } from "../src/widgets/index";
@@ -20,6 +21,7 @@ function setup() {
     app: {
       registerCSS: vi.fn(async () => {}),
       registerWidget: vi.fn(async () => {}),
+      unregisterWidget: vi.fn(async () => {}),
       registerCommand: vi.fn(async (c: any) => commands.push(c)),
       registerMenuItem: vi.fn(async (m: any) => menus.push(m)),
       toast: vi.fn(),
@@ -40,6 +42,7 @@ it("registers a popup instead of a pane, along with both commands and the table 
     expect.anything(),
   );
   expect(commands.map((c) => c.name)).toEqual(["数据库看板", "打开最近的看板"]);
+  expect(plugin.app.registerWidget).toHaveBeenCalledWith("table-launcher", "DocumentBelowTitle", expect.anything());
   expect(menus[0].location).toBe("PropertyConfigMenu");
 });
 it("does not pass a stale grouping override when opening from a non-select column", async () => {

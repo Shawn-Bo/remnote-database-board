@@ -4,7 +4,7 @@ A database interface for existing RemNote advanced tables, with Notion-inspired 
 
 ## Use
 
-1. Open **数据库看板** from RemNote's command menu, or **以看板打开** from an advanced-table property menu. The latter opens a board even when the last view was a table; a single-select column becomes the grouping property. Existing filters and sorts are retained. If necessary, connect using the table's underlying tag link or ID.
+1. Focus the advanced-table node itself and click **打开看板** below its title. For an embedded table, first use its **以完整页面打开** button. The launcher belongs only to the table node; enclosing documents and ordinary notes do not gain database controls. It re-reads the selected table and preserves its current row scope. You can also open **数据库看板** from RemNote's command menu, or **以看板打开** from an advanced-table property menu. The latter opens a board even when the last view was a table; a single-select column becomes the grouping property. Existing filters and sorts are retained. If necessary, connect using the table's underlying tag link or ID.
 2. Switch between **表格** and **看板**. Use **+** to create another view. Each view saves its own layout, displayed properties, filters, sorts, and board grouping. View settings also let you rename, duplicate, or delete a view.
 3. Use the toolbar to search, combine filters with **所有 / 任一**, and apply multiple ordered sort rules. Select values use the original option IDs. Numbers sort numerically; empty values stay last. Board settings control grouping, hidden or collapsed groups, card size, and image previews.
 4. Drag a card to change its grouping property. Without explicit sorting, dragging also sets its position within that view. On touch screens, drag from the handle; swipe elsewhere to scroll. Open a card or use the table to edit single-select, plain-text, number, and URL properties. **新建** creates an original RemNote record under the database tag; supported equality filters and the chosen board column prefill its properties.
@@ -43,6 +43,6 @@ For isolated browser checks, serve the development build on port 8083 with `BOAR
 
 ## Release scope
 
-Version 0.3.2 keeps the database interactive beside RemNote's full native record page on desktop, and uses a full-width note on phones. It includes the 0.3.0 table and board views, compound filters, multi-property sorts, per-view configuration, card ordering, and original-property writes. Calendar, timeline, nested filter groups, table grouping, column resizing, and schema creation are deferred. It is not an implementation of Notion's collaboration backend or its full feature set.
+Version 0.3.3 adds a visible launch button on the advanced-table node itself, below its title. It keeps the database interactive beside RemNote's full native record page on desktop, and uses a full-width note on phones. It includes the 0.3.0 table and board views, compound filters, multi-property sorts, per-view configuration, card ordering, and original-property writes. Calendar, timeline, nested filter groups, table grouping, column resizing, and schema creation are deferred. It is not an implementation of Notion's collaboration backend or its full feature set.
 
 Validation and remaining device limitations are recorded in `docs/notion-database-experience.md`. This repository is unlisted; unlisted status is not a privacy boundary for source code.

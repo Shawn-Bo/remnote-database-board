@@ -1,0 +1,10 @@
+.table-launcher { display:flex; flex-wrap:wrap; align-items:center; gap:8px; padding:6px 0; color:var(--rn-clr-content-primary,#5c5b59); font:13px/1.4 ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC",sans-serif; }
+.table-launcher button { display:inline-flex; align-items:center; gap:7px; min-height:36px; max-width:100%; padding:6px 10px; border:1px solid #8883; border-radius:6px; background:#88888808; color:inherit; font:inherit; cursor:pointer; }
+.table-launcher button:hover { background:#8882; }
+.table-launcher button:focus-visible { outline:2px solid #2383e2; outline-offset:2px; }
+.table-launcher button:disabled { opacity:.6; cursor:wait; }
+.table-launcher .db-icon { width:16px; height:16px; flex:none; }
+.table-launcher [role=alert] { color:#b84945; font-size:12px; }
+@media(prefers-color-scheme:dark) { .table-launcher { color:var(--rn-clr-content-primary,#d5d4d2); } }
+@media(max-width:700px) { .table-launcher button { min-height:44px; } }
+.rn-plugin-root:has(.table-launcher), body:has(.table-launcher), html:has(.table-launcher) { background:transparent!important; }
