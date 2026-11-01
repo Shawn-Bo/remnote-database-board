@@ -53,6 +53,9 @@ export interface DatabaseViews {
   activeViewId: string;
   views: DatabaseView[];
 }
+export interface BoardOpening {
+  groupFieldId?: string;
+}
 export const newId = () =>
   typeof crypto !== "undefined" && crypto.randomUUID
     ? crypto.randomUUID()
@@ -107,6 +110,38 @@ export function defaultViews(
     version: 1,
     activeViewId: views[legacy && config.groupFieldId ? 1 : 0].id,
     views,
+  };
+}
+
+// A table's explicit board action is an opening request, not a saved setting.
+// Reuse a matching board when possible, retaining its filters and sorts.
+export function openBoardView(
+  state: DatabaseViews,
+  snapshot: Snapshot,
+  config: Config,
+  request: BoardOpening,
+): DatabaseViews {
+  const group = snapshot.fields.find(
+    (field) =>
+      field.id === request.groupFieldId && field.type === "single_select",
+  );
+  const boards = state.views.filter((view) => view.layout === "board");
+  const active = boards.find((view) => view.id === state.activeViewId);
+  const existing = group
+    ? (active?.groupFieldId === group.id ? active : undefined) ??
+      boards.find((view) => view.groupFieldId === group.id) ??
+      active ?? boards[0]
+    : active ?? boards[0];
+  const board = existing ?? newView("board", snapshot, config);
+  const opened = group && board.groupFieldId !== group.id
+    ? { ...board, groupFieldId: group.id, hiddenGroups: [], collapsedGroups: [] }
+    : board;
+  return {
+    ...state,
+    activeViewId: opened.id,
+    views: existing
+      ? state.views.map((view) => view.id === opened.id ? opened : view)
+      : [...state.views, opened],
   };
 }
 // Persisted configurations can come from another device or an older plugin.

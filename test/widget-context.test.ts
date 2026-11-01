@@ -7,3 +7,9 @@ it('deduplicates valid scope IDs and ignores unrelated or malformed widget data'
   expect(readPaneContext({contextData:{tagId:'tag',rowScope:['a',null,'a','b'],filterFieldId:17}})).toEqual({config:{tagId:'tag'},rowScope:['a','b']});
   expect(readPaneContext(null)).toEqual({config:{},rowScope:undefined});
 });
+it('distinguishes an explicit board entry from ordinary reopen configuration',()=>{
+  const config={tagId:'tag',groupFieldId:'status'};
+  expect(readPaneContext({contextData:{...config,openAsBoard:true}}).openingBoard).toEqual({groupFieldId:'status'});
+  expect(readPaneContext({contextData:config}).openingBoard).toBeUndefined();
+  expect(readPaneContext({contextData:{...config,openAsBoard:'true'}}).openingBoard).toBeUndefined();
+});

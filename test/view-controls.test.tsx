@@ -20,6 +20,7 @@ afterEach(() => {
 async function mount(
   data: Snapshot = structuredClone(fixture),
   stored?: Config,
+  options: Partial<React.ComponentProps<typeof Board>> = {},
 ) {
   const config = stored ?? inferConfig(data);
   if (!config.viewState) config.viewState = defaultViews(data, config);
@@ -40,7 +41,7 @@ async function mount(
       <Board
         initial={config}
         port={port}
-
+        {...options}
         onConfig={save}
       />,
       root,
@@ -94,6 +95,42 @@ it("saves independent filters and sorts per view, and restores them after reopen
     "example-row-08",
   );
   expect(port.write).not.toHaveBeenCalled();
+});
+it("opens the requested board grouping while preserving queries and allowing later table navigation", async () => {
+  const data = structuredClone(fixture);
+  const config = inferConfig(data);
+  config.viewState = defaultViews(data, config);
+  const board = config.viewState.views[1];
+  board.filters = [{id:'f',fieldId:NAME,operator:'contains',value:'示例'}];
+  board.sorts = [{id:'s',fieldId:NAME,direction:'desc'}];
+  board.hiddenGroups = [data.fields[1].choices[0].id];
+  board.collapsedGroups = [data.fields[1].choices[1].id];
+  const { save, port } = await mount(data, config, {
+    openingBoard: {groupFieldId:config.filterFieldId},
+  });
+  expect(root.querySelector('[role="tab"][aria-selected="true"]')?.textContent).toBe('看板');
+  expect(root.querySelectorAll('.card')).toHaveLength(9);
+  const saved = (save.mock.calls.at(-1) as unknown as [Config])[0];
+  const opened = saved.viewState!.views.find(v=>v.id===saved.viewState!.activeViewId)!;
+  expect(opened).toMatchObject({id:board.id,groupFieldId:config.filterFieldId,filters:board.filters,sorts:board.sorts,hiddenGroups:[],collapsedGroups:[]});
+  expect(saved.viewState!.views).toHaveLength(2);
+  expect(board.groupFieldId).toBe(config.groupFieldId);
+  await click('表格');
+  await click('刷新');
+  expect(root.querySelector('[role="tab"][aria-selected="true"]')?.textContent).toBe('表格');
+  expect(port.write).not.toHaveBeenCalled();
+});
+it("adds a board when only a saved table remains without replacing that table", async () => {
+  const data = structuredClone(fixture);
+  const config = inferConfig(data);
+  config.viewState = defaultViews(data, config);
+  config.viewState.views = [config.viewState.views[0]];
+  const table = structuredClone(config.viewState.views[0]);
+  const {save} = await mount(data, config, {openingBoard:{}});
+  const saved = (save.mock.calls.at(-1) as unknown as [Config])[0];
+  expect(saved.viewState!.views[0]).toEqual(table);
+  expect(saved.viewState!.views).toHaveLength(2);
+  expect(root.querySelector('[role="tab"][aria-selected="true"]')?.textContent).toBe('看板');
 });
 it("exposes plain tables without a group property and applies text filters", async () => {
   const data: Snapshot = {

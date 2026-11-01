@@ -10,6 +10,7 @@ import { SdkBoardPort } from "../sdk-port";
 import { LAST_CONFIG_KEY, configKey, saveConfig } from "../config";
 import { readPaneContext } from "../widget-context";
 import type { Config } from "../model";
+import type { BoardOpening } from "../views";
 import "../board.css";
 
 function BoardWidget() {
@@ -18,6 +19,7 @@ function BoardWidget() {
   const [context, setContext] = useState<{
     initial: Partial<Config> & { tagId: string };
     rowScope?: string[];
+    openingBoard?: BoardOpening;
   }>();
   const [error, setError] = useState("");
   const persist = useCallback(
@@ -31,7 +33,7 @@ function BoardWidget() {
   useEffect(() => {
     let alive = true;
     void (async () => {
-      const { config: raw, rowScope } = readPaneContext(
+      const { config: raw, rowScope, openingBoard } = readPaneContext(
         await plugin.widget.getWidgetContext(),
       );
       const previous = await plugin.storage.getSynced<Config>(LAST_CONFIG_KEY);
@@ -41,7 +43,7 @@ function BoardWidget() {
         ? await plugin.storage.getSynced<Config>(configKey(tagId))
         : undefined;
       const initial = { ...stored, ...raw, tagId };
-      if (alive) setContext({ initial, rowScope });
+      if (alive) setContext({ initial, rowScope, openingBoard });
     })().catch((e) => {
       if (alive) setError(String(e));
     });
@@ -55,6 +57,7 @@ function BoardWidget() {
       <Board
         port={port}
         initial={context.initial}
+        openingBoard={context.openingBoard}
         renderNote={(remId) => <NativeNote key={remId} remId={remId} />}
         rowScope={context.rowScope}
         onConfig={persist}

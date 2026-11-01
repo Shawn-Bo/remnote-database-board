@@ -4,7 +4,7 @@ A database interface for existing RemNote advanced tables, with Notion-inspired 
 
 ## Use
 
-1. Open **数据库看板** from RemNote's command menu, or **以看板打开** from an advanced-table property menu. If necessary, connect using the table's underlying tag link or ID.
+1. Open **数据库看板** from RemNote's command menu, or **以看板打开** from an advanced-table property menu. The latter opens a board even when the last view was a table; a single-select column becomes the grouping property. Existing filters and sorts are retained. If necessary, connect using the table's underlying tag link or ID.
 2. Switch between **表格** and **看板**. Use **+** to create another view. Each view saves its own layout, displayed properties, filters, sorts, and board grouping. View settings also let you rename, duplicate, or delete a view.
 3. Use the toolbar to search, combine filters with **所有 / 任一**, and apply multiple ordered sort rules. Select values use the original option IDs. Numbers sort numerically; empty values stay last. Board settings control grouping, hidden or collapsed groups, card size, and image previews.
 4. Drag a card to change its grouping property. Without explicit sorting, dragging also sets its position within that view. On touch screens, drag from the handle; swipe elsewhere to scroll. Open a card or use the table to edit single-select, plain-text, number, and URL properties. **新建** creates an original RemNote record under the database tag; supported equality filters and the chosen board column prefill its properties.
@@ -38,6 +38,8 @@ npm run serve
 ```
 
 The build produces `PluginZip.zip`. `dist/preview.html` is an isolated fixture and does not access a RemNote account. The plugin opens at near-window size (full width on phones), with host-scoped sizing to avoid a small iframe sizing loop. It uses a popup because the tested RemNote 1.28.62 pane parser rejects the SDK's `widget~` pane prefix.
+
+For isolated browser checks, serve the development build on port 8083 with `BOARD_PORT=8083 npm run serve`. The `test:browser`, `test:mobile`, and `test:touch` commands target that fixture; the installed plugin service on 8081 deliberately excludes preview files. These checks do not validate the embedded native editor or a real iPhone installation.
 
 ## Release scope
 

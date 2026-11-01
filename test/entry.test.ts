@@ -29,7 +29,7 @@ function setup() {
     widget: { openPopup: vi.fn(async () => {}) },
     rem: { findOne: async () => property },
   };
-  return { plugin, commands, menus };
+  return { plugin, commands, menus, property };
 }
 it("registers a popup instead of a pane, along with both commands and the table menu", async () => {
   const { plugin, commands, menus } = setup();
@@ -42,13 +42,23 @@ it("registers a popup instead of a pane, along with both commands and the table 
   expect(commands.map((c) => c.name)).toEqual(["数据库看板", "打开最近的看板"]);
   expect(menus[0].location).toBe("PropertyConfigMenu");
 });
+it("does not pass a stale grouping override when opening from a non-select column", async () => {
+  const {plugin, menus, property} = setup();
+  property.getPropertyType = async () => 'text';
+  plugin.storage.getSynced = async () => ({tagId:'source',groupFieldId:'old-status'});
+  await activate(plugin);
+  await menus[0].action({columnPropertyId:'status',rowIds:['r1']});
+  expect(plugin.widget.openPopup).toHaveBeenCalledWith('board',{
+    tagId:'source',openAsBoard:true,rowScope:['r1'],
+  },false);
+});
 it("opens a native table in the popup using its real property parent and passed row scope", async () => {
   const { plugin, menus } = setup();
   await activate(plugin);
   await menus[0].action({ columnPropertyId: "status", rowIds: ["r1", "r2"] });
   expect(plugin.widget.openPopup).toHaveBeenCalledWith(
     "board",
-    { tagId: "source", groupFieldId: "status", rowScope: ["r1", "r2"] },
+    { tagId: "source", openAsBoard: true, groupFieldId: "status", rowScope: ["r1", "r2"] },
     false,
   );
 });

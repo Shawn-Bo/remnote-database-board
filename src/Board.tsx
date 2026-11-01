@@ -8,6 +8,8 @@ import {
   viewGroups,
   moveValue,
   placeRow,
+  openBoardView,
+  type BoardOpening,
   type DatabaseViews,
 } from "./views";
 import { ViewToolbar, ViewPanel, type Panel } from "./ViewControls";
@@ -17,6 +19,7 @@ import { PropertyCell } from "./PropertyCell";
 interface Props {
   port: BoardPort;
   initial: Partial<Config> & { tagId: string };
+  openingBoard?: BoardOpening;
   renderNote?: (remId: string) => React.ReactNode;
   rowScope?: string[];
   onConfig?: (config: Config) => Promise<void>;
@@ -33,6 +36,7 @@ const message = (e: unknown) => (e instanceof Error ? e.message : String(e));
 export function Board({
   port,
   initial,
+  openingBoard,
   renderNote,
   rowScope,
   onConfig,
@@ -117,7 +121,7 @@ export function Board({
     [onConfig],
   );
   const connect = useCallback(
-    async (input: string, prior?: Partial<Config>, allRows = false) => {
+    async (input: string, prior?: Partial<Config>, allRows = false, entry?: BoardOpening) => {
       if (pendingRef.current.size || loadingRef.current || dragRef.current)
         return;
       const seq = ++sequence.current;
@@ -143,6 +147,8 @@ export function Board({
         next.viewState =
           readViews(source?.viewState) ??
           defaultViews(data, next, !!source?.groupFieldId);
+        if (entry)
+          next.viewState = openBoardView(next.viewState, data, next, entry);
         configRef.current = next;
         scopeRef.current = nextScope;
         setScope(nextScope);
@@ -188,8 +194,8 @@ export function Board({
   }, [port]);
 
   useEffect(() => {
-    if (initial.tagId) void connect(initial.tagId, initial);
-  }, [connect, initial]);
+    if (initial.tagId) void connect(initial.tagId, initial, false, openingBoard);
+  }, [connect, initial, openingBoard]);
   useEffect(() => {
     const tick = () => {
       if (!document.hidden) void refresh();

@@ -4,7 +4,7 @@ const fixture = require('../src/demo-snapshot.json');
 const config = require('../src/demo-config.json');
 
 // This test controls only the local preview with synthetic rows, never RemNote.
-const url = process.env.BOARD_TEST_URL || 'http://localhost:8081/preview.html';
+const url = process.env.BOARD_TEST_URL || 'http://localhost:8083/preview.html';
 const point = (x, y) => ({x: Math.round(x), y: Math.round(y), radiusX: 2, radiusY: 2, force: 1, id: 1});
 
 async function newFixture(browser) {
@@ -83,7 +83,7 @@ async function main() {
     {
       const {context, page, cdp, errors} = await newFixture(browser);
       try {
-        const song = page.locator('.card-song').first();
+        const song = page.locator('.card-property').first();
         await song.scrollIntoViewIfNeeded();
         const rect = await song.boundingBox();
         const start = {x: rect.x + 150, y: rect.y + rect.height / 2};

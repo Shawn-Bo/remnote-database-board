@@ -4,7 +4,7 @@ import {
   WidgetLocation,
   type ReactRNPlugin,
 } from "@remnote/plugin-sdk";
-import { LAST_CONFIG_KEY, configKey } from "../config";
+import { LAST_CONFIG_KEY } from "../config";
 import type { Config } from "../model";
 import { installNativeClipBridge } from "../native-clip-bridge";
 
@@ -103,10 +103,9 @@ export async function activate(plugin: ReactRNPlugin) {
         await plugin.app.toast("找不到属性所属的表格标签。");
         return;
       }
-      const stored = await plugin.storage.getSynced<Config>(configKey(tag._id));
       await open({
-        ...stored,
         tagId: tag._id,
+        openAsBoard: true,
         ...(String(await property.getPropertyType()) === "single_select"
           ? { groupFieldId: property._id }
           : {}),
