@@ -44,10 +44,12 @@ export function visibleClip(element: HTMLElement): string {
   ];
   const board = element.closest<HTMLElement>(".db-board");
   const drawer = element.closest<HTMLElement>(".detail-drawer");
-  // Native embeds otherwise float above our modal and its dimmed background.
+  const workspace = element.closest<HTMLElement>(".database-workspace");
+  // Keep desktop cards visible beside the native page. On phones the page
+  // covers the workspace, while creation is a modal on every screen size.
   if (
     board?.querySelector(".create-backdrop") ||
-    (board?.querySelector(".drawer-backdrop") && !drawer)
+    (workspace && getComputedStyle(workspace).visibility === "hidden")
   )
     return "inset(100%)";
   for (

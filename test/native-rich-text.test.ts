@@ -26,15 +26,18 @@ it("clips a native embed to the intersection of nested viewports without hiding 
   ).toBe("inset(100%)");
 });
 
-it("accounts for scroll clipping and hides background media behind the detail drawer", () => {
+it("clips cards beside the native page, and hides them only for a modal or covered mobile workspace", () => {
   vi.stubGlobal("innerWidth", 500);
   vi.stubGlobal("innerHeight", 300);
   const board = document.createElement("main");
   board.className = "db-board";
+  const workspace = document.createElement("div");
+  workspace.className = "database-workspace";
   const scroll = document.createElement("div");
   scroll.style.overflow = "auto";
   const host = document.createElement("div");
-  board.append(scroll);
+  board.append(workspace);
+  workspace.append(scroll);
   scroll.append(host);
   document.body.append(board);
   vi.spyOn(scroll, "getBoundingClientRect").mockReturnValue({
@@ -54,8 +57,15 @@ it("accounts for scroll clipping and hides background media behind the detail dr
     clientHeight: { value: 200 },
   });
   expect(visibleClip(host)).toBe("inset(30px 50px 0px 0px)");
+  const nativePage = document.createElement("aside");
+  nativePage.className = "detail-drawer";
+  board.append(nativePage);
+  expect(visibleClip(host)).toBe("inset(30px 50px 0px 0px)");
+  workspace.style.visibility = "hidden";
+  expect(visibleClip(host)).toBe("inset(100%)");
+  workspace.style.visibility = "visible";
   const modal = document.createElement("div");
-  modal.className = "drawer-backdrop";
+  modal.className = "create-backdrop";
   board.append(modal);
   expect(visibleClip(host)).toBe("inset(100%)");
   modal.remove();

@@ -646,246 +646,32 @@ export function Board({
     </article>
   );
   return (
-    <main className="db-board">
-      <header className="board-header">
-        <div className="database-breadcrumb">
-          <Icon name="table" />
-          <span>数据库</span>
-          {preview && <span className="preview-tag">演示</span>}
-          <div className="header-spacer" />
-          {onClose && (
-            <button
-              className="icon-button"
-              aria-label="关闭看板"
-              disabled={pending.size > 0 || creating}
-              onClick={() => void closeBoard()}
-            >
-              <Icon name="close" />
-            </button>
-          )}
-        </div>
-        <div className="title-row">
-          <h1>{snapshot?.name || "连接数据库"}</h1>
-        </div>
-        {snapshot && activeView && viewState && (
-          <ViewToolbar
-            snapshot={snapshot}
-            config={config}
-            state={viewState}
-            view={activeView}
-            onChange={changeViews}
-            panel={panel}
-            setPanel={setPanel}
-            disabled={pending.size > 0 || loading || creating}
-            search={search}
-            setSearch={setSearch}
-            onCreate={
-              port.create ? () => setNewRecord({ name: "" }) : undefined
-            }
-            onRefresh={() => void refresh()}
-          />
-        )}
-        {error && (
-          <div className="error-banner" role="alert">
-            {error}
-            <button onClick={() => void refresh()}>重新读取</button>
+    <main
+      className={`db-board ${selected && !newRecord ? "has-open-record" : ""}`}
+    >
+      <div className="database-workspace">
+        <header className="board-header">
+          <div className="database-breadcrumb">
+            <Icon name="table" />
+            <span>数据库</span>
+            {preview && <span className="preview-tag">演示</span>}
+            <div className="header-spacer" />
+            {onClose && (
+              <button
+                className="icon-button"
+                aria-label="关闭看板"
+                disabled={pending.size > 0 || creating}
+                onClick={() => void closeBoard()}
+              >
+                <Icon name="close" />
+              </button>
+            )}
           </div>
-        )}
-        {viewError && (
-          <div className="error-banner" role="alert">
-            {viewError}
-            <button onClick={() => void persistConfig(configRef.current)}>
-              重试保存视图
-            </button>
+          <div className="title-row">
+            <h1>{snapshot?.name || "连接数据库"}</h1>
           </div>
-        )}
-      </header>
-      {!snapshot ? (
-        <div className="setup-state">
-          {loading ? <p>正在读取数据库…</p> : connection}
-        </div>
-      ) : (
-        activeView &&
-        viewState && (
-          <div className={`database-body ${panel ? "panel-open" : ""}`}>
-            <div className="view-canvas">
-              {view === "board" ? (
-                <div
-                  className={`board-scroll size-${activeView.cardSize} ${activeView.colorColumns ? "color-columns" : ""}`}
-                >
-                  <div className="columns">
-                    {columns.map((column) => (
-                      <section
-                        key={column.id}
-                        data-column-id={column.id}
-                        className={`column tone-${column.choiceIndex < 0 ? 0 : (column.choiceIndex % 8) + 1} ${over === column.id ? "drag-over" : ""} ${activeView.collapsedGroups.includes(column.id) ? "collapsed" : ""}`}
-                      >
-                        <div className="column-heading">
-                          <button
-                            className="group-label"
-                            onClick={() =>
-                              patchView({
-                                collapsedGroups:
-                                  activeView.collapsedGroups.includes(column.id)
-                                    ? activeView.collapsedGroups.filter(
-                                        (id) => id !== column.id,
-                                      )
-                                    : [
-                                        ...activeView.collapsedGroups,
-                                        column.id,
-                                      ],
-                              })
-                            }
-                            aria-expanded={
-                              !activeView.collapsedGroups.includes(column.id)
-                            }
-                          >
-                            <span>{column.name}</span>
-                            <span className="count">{column.rows.length}</span>
-                          </button>
-                          <button
-                            className="icon-button group-menu"
-                            aria-label={`设置分组 ${column.name}`}
-                            onClick={() => setPanel("group")}
-                          >
-                            <Icon name="more" />
-                          </button>
-                        </div>
-                        {!activeView.collapsedGroups.includes(column.id) && (
-                          <div className="card-list">
-                            {column.rows.map(card)}
-                            {port.create && column.id !== UNKNOWN && (
-                              <button
-                                className="new-card"
-                                onClick={() =>
-                                  setNewRecord({
-                                    name: "",
-                                    group: canMove ? column.id : undefined,
-                                  })
-                                }
-                              >
-                                <Icon name="plus" />
-                                新页面
-                              </button>
-                            )}
-                          </div>
-                        )}
-                      </section>
-                    ))}
-                    {!columns.length && (
-                      <div className="empty-state">
-                        没有符合条件的记录。
-                        <button
-                          className="subtle-button"
-                          onClick={() => setPanel("filters")}
-                        >
-                          调整筛选
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ) : (
-                <div
-                  className={`table-scroll ${activeView.wrapCells ? "wrap-cells" : ""}`}
-                >
-                  <table>
-                    <thead>
-                      <tr>
-                        <th className="name-column">
-                          <span className="type-icon">Aa</span>名称
-                        </th>
-                        {shownFields.map((f) => (
-                          <th key={f.id}>
-                            <button onClick={() => setPanel("properties")}>
-                              <Icon name={fieldIcon(f.type)} />
-                              {f.name}
-                            </button>
-                          </th>
-                        ))}
-                        <th className="add-column">
-                          <button
-                            className="icon-button"
-                            aria-label="显示属性"
-                            onClick={() => setPanel("properties")}
-                          >
-                            <Icon name="plus" />
-                          </button>
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {rows.map((row) => (
-                        <tr key={row.id} data-row-id={row.id}>
-                          <td className="name-column">
-                            <button
-                              className="table-name"
-                              onClick={() => selectRow(row)}
-                            >
-                              <Icon name="page" />
-                              {row.name || "未命名"}
-                            </button>
-                            <button
-                              className="open-note icon-button"
-                              aria-label={`打开${row.name}原笔记`}
-                              onClick={() => void open(row.id)}
-                            >
-                              <Icon name="arrow" />
-                            </button>
-                          </td>
-                          {shownFields.map((f) => (
-                            <td key={f.id}>
-                              <PropertyCell
-                                cell={row.cells[f.id] ?? emptyCell()}
-                                field={f}
-                                disabled={pending.has(row.id)}
-                                onSave={(expected, value) =>
-                                  write(row, f.id, expected, value)
-                                }
-                                onOpen={() => void open(row.id)}
-                                renderRichCell={renderRichCell}
-                              />
-                            </td>
-                          ))}
-                          <td />
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                  {port.create && (
-                    <button
-                      className="new-table-row"
-                      onClick={() => setNewRecord({ name: "" })}
-                    >
-                      <Icon name="plus" />
-                      新页面
-                    </button>
-                  )}
-                  {!rows.length && (
-                    <div className="empty-state">没有符合条件的记录。</div>
-                  )}
-                </div>
-              )}
-              <footer className="database-footer">
-                <span>
-                  {rows.length} 条记录
-                  {snapshot.rows.length !== rows.length
-                    ? ` / 共 ${snapshot.rows.length} 条`
-                    : ""}
-                  {scope ? " · 当前表格范围" : ""}
-                </span>
-                <span aria-live="polite">
-                  {loading
-                    ? "正在读取…"
-                    : pending.size || creating
-                      ? "正在保存…"
-                      : viewSaving
-                        ? "正在保存视图…"
-                        : notice}
-                </span>
-              </footer>
-            </div>
-            <ViewPanel
+          {snapshot && activeView && viewState && (
+            <ViewToolbar
               snapshot={snapshot}
               config={config}
               state={viewState}
@@ -893,13 +679,231 @@ export function Board({
               onChange={changeViews}
               panel={panel}
               setPanel={setPanel}
-              disabled={pending.size > 0 || creating}
-              groups={allGroups}
-              connection={connection}
+              disabled={pending.size > 0 || loading || creating}
+              search={search}
+              setSearch={setSearch}
+              onCreate={
+                port.create ? () => setNewRecord({ name: "" }) : undefined
+              }
+              onRefresh={() => void refresh()}
             />
+          )}
+          {error && (
+            <div className="error-banner" role="alert">
+              {error}
+              <button onClick={() => void refresh()}>重新读取</button>
+            </div>
+          )}
+          {viewError && (
+            <div className="error-banner" role="alert">
+              {viewError}
+              <button onClick={() => void persistConfig(configRef.current)}>
+                重试保存视图
+              </button>
+            </div>
+          )}
+        </header>
+        {!snapshot ? (
+          <div className="setup-state">
+            {loading ? <p>正在读取数据库…</p> : connection}
           </div>
-        )
-      )}
+        ) : (
+          activeView &&
+          viewState && (
+            <div className={`database-body ${panel ? "panel-open" : ""}`}>
+              <div className="view-canvas">
+                {view === "board" ? (
+                  <div
+                    className={`board-scroll size-${activeView.cardSize} ${activeView.colorColumns ? "color-columns" : ""}`}
+                  >
+                    <div className="columns">
+                      {columns.map((column) => (
+                        <section
+                          key={column.id}
+                          data-column-id={column.id}
+                          className={`column tone-${column.choiceIndex < 0 ? 0 : (column.choiceIndex % 8) + 1} ${over === column.id ? "drag-over" : ""} ${activeView.collapsedGroups.includes(column.id) ? "collapsed" : ""}`}
+                        >
+                          <div className="column-heading">
+                            <button
+                              className="group-label"
+                              onClick={() =>
+                                patchView({
+                                  collapsedGroups:
+                                    activeView.collapsedGroups.includes(column.id)
+                                      ? activeView.collapsedGroups.filter(
+                                          (id) => id !== column.id,
+                                        )
+                                      : [
+                                          ...activeView.collapsedGroups,
+                                          column.id,
+                                        ],
+                                })
+                              }
+                              aria-expanded={
+                                !activeView.collapsedGroups.includes(column.id)
+                              }
+                            >
+                              <span>{column.name}</span>
+                              <span className="count">{column.rows.length}</span>
+                            </button>
+                            <button
+                              className="icon-button group-menu"
+                              aria-label={`设置分组 ${column.name}`}
+                              onClick={() => setPanel("group")}
+                            >
+                              <Icon name="more" />
+                            </button>
+                          </div>
+                          {!activeView.collapsedGroups.includes(column.id) && (
+                            <div className="card-list">
+                              {column.rows.map(card)}
+                              {port.create && column.id !== UNKNOWN && (
+                                <button
+                                  className="new-card"
+                                  onClick={() =>
+                                    setNewRecord({
+                                      name: "",
+                                      group: canMove ? column.id : undefined,
+                                    })
+                                  }
+                                >
+                                  <Icon name="plus" />
+                                  新页面
+                                </button>
+                              )}
+                            </div>
+                          )}
+                        </section>
+                      ))}
+                      {!columns.length && (
+                        <div className="empty-state">
+                          没有符合条件的记录。
+                          <button
+                            className="subtle-button"
+                            onClick={() => setPanel("filters")}
+                          >
+                            调整筛选
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ) : (
+                  <div
+                    className={`table-scroll ${activeView.wrapCells ? "wrap-cells" : ""}`}
+                  >
+                    <table>
+                      <thead>
+                        <tr>
+                          <th className="name-column">
+                            <span className="type-icon">Aa</span>名称
+                          </th>
+                          {shownFields.map((f) => (
+                            <th key={f.id}>
+                              <button onClick={() => setPanel("properties")}>
+                                <Icon name={fieldIcon(f.type)} />
+                                {f.name}
+                              </button>
+                            </th>
+                          ))}
+                          <th className="add-column">
+                            <button
+                              className="icon-button"
+                              aria-label="显示属性"
+                              onClick={() => setPanel("properties")}
+                            >
+                              <Icon name="plus" />
+                            </button>
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {rows.map((row) => (
+                          <tr key={row.id} data-row-id={row.id}>
+                            <td className="name-column">
+                              <button
+                                className="table-name"
+                                onClick={() => selectRow(row)}
+                              >
+                                <Icon name="page" />
+                                {row.name || "未命名"}
+                              </button>
+                              <button
+                                className="open-note icon-button"
+                                aria-label={`打开${row.name}原笔记`}
+                                onClick={() => void open(row.id)}
+                              >
+                                <Icon name="arrow" />
+                              </button>
+                            </td>
+                            {shownFields.map((f) => (
+                              <td key={f.id}>
+                                <PropertyCell
+                                  cell={row.cells[f.id] ?? emptyCell()}
+                                  field={f}
+                                  disabled={pending.has(row.id)}
+                                  onSave={(expected, value) =>
+                                    write(row, f.id, expected, value)
+                                  }
+                                  onOpen={() => void open(row.id)}
+                                  renderRichCell={renderRichCell}
+                                />
+                              </td>
+                            ))}
+                            <td />
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                    {port.create && (
+                      <button
+                        className="new-table-row"
+                        onClick={() => setNewRecord({ name: "" })}
+                      >
+                        <Icon name="plus" />
+                        新页面
+                      </button>
+                    )}
+                    {!rows.length && (
+                      <div className="empty-state">没有符合条件的记录。</div>
+                    )}
+                  </div>
+                )}
+                <footer className="database-footer">
+                  <span>
+                    {rows.length} 条记录
+                    {snapshot.rows.length !== rows.length
+                      ? ` / 共 ${snapshot.rows.length} 条`
+                      : ""}
+                    {scope ? " · 当前表格范围" : ""}
+                  </span>
+                  <span aria-live="polite">
+                    {loading
+                      ? "正在读取…"
+                      : pending.size || creating
+                        ? "正在保存…"
+                        : viewSaving
+                          ? "正在保存视图…"
+                          : notice}
+                  </span>
+                </footer>
+              </div>
+              <ViewPanel
+                snapshot={snapshot}
+                config={config}
+                state={viewState}
+                view={activeView}
+                onChange={changeViews}
+                panel={panel}
+                setPanel={setPanel}
+                disabled={pending.size > 0 || creating}
+                groups={allGroups}
+                connection={connection}
+              />
+            </div>
+          )
+        )}
+      </div>
       {newRecord && (
         <div className="create-backdrop">
           <form
@@ -940,48 +944,44 @@ export function Board({
           </form>
         </div>
       )}
-      {selected && (
-        <div className="drawer-backdrop" onClick={closeDetail}>
-          <aside
-            className="detail-drawer"
-            role="dialog"
-            aria-modal="true"
-            aria-label={`${selected.name}笔记`}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="drawer-heading">
-              <span className="drawer-heading-title">{selected.name}</span>
-              <div className="drawer-heading-actions">
-                <button
-                  aria-label="在 RemNote 打开完整笔记"
-                  onClick={() => void open(selected.id)}
-                >
-                  <Icon name="arrow" />
-                </button>
-                <button aria-label="关闭笔记" onClick={closeDetail}>
-                  <Icon name="close" />
-                </button>
-              </div>
+      {selected && !newRecord && (
+        <aside
+          className="detail-drawer"
+          role="dialog"
+          aria-label={`${selected.name}笔记`}
+        >
+          <div className="drawer-heading">
+            <span className="drawer-heading-title">{selected.name}</span>
+            <div className="drawer-heading-actions">
+              <button
+                aria-label="在 RemNote 打开完整笔记"
+                onClick={() => void open(selected.id)}
+              >
+                <Icon name="arrow" />
+              </button>
+              <button aria-label="关闭笔记" onClick={closeDetail}>
+                <Icon name="close" />
+              </button>
             </div>
-            {error && (
-              <p role="alert" className="native-note-error">
-                {error}
-              </p>
+          </div>
+          {error && (
+            <p role="alert" className="native-note-error">
+              {error}
+            </p>
+          )}
+          <div className="native-note-slot">
+            {renderNote ? (
+              renderNote(selected.id)
+            ) : (
+              <button
+                className="original-note"
+                onClick={() => void open(selected.id)}
+              >
+                在 RemNote 打开完整笔记
+              </button>
             )}
-            <div className="native-note-slot">
-              {renderNote ? (
-                renderNote(selected.id)
-              ) : (
-                <button
-                  className="original-note"
-                  onClick={() => void open(selected.id)}
-                >
-                  在 RemNote 打开完整笔记
-                </button>
-              )}
-            </div>
-          </aside>
-        </div>
+          </div>
+        </aside>
       )}
     </main>
   );

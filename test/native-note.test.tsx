@@ -68,3 +68,21 @@ it("opens the complete native note and closes the board without writing a copied
   expect(close).toHaveBeenCalledOnce();
   expect(port.write).not.toHaveBeenCalled();
 });
+it("keeps the database usable while switching native pages and changing views", async () => {
+  const {port, renderNote} = await mount();
+  const cards = [...root.querySelectorAll("[data-row-id]")];
+  const first = cards[0].getAttribute("data-row-id");
+  const second = cards[1].getAttribute("data-row-id");
+  await click(`[data-row-id="${first}"] .card-title`);
+  expect(renderNote).toHaveBeenLastCalledWith(first);
+  await click(`[data-row-id="${second}"] .card-title`);
+  expect(renderNote).toHaveBeenLastCalledWith(second);
+  await act(async () => {
+    const table = [...root.querySelectorAll('[role="tab"]')].find(el=>el.textContent === '表格')!;
+    Simulate.click(table);
+  });
+  expect(root.querySelectorAll('tbody tr')).toHaveLength(fixture.rows.length);
+  expect(root.querySelector('.native-note-slot [data-native-rem]')?.getAttribute('data-native-rem')).toBe(second);
+  expect(port.write).not.toHaveBeenCalled();
+  expect(port.open).not.toHaveBeenCalled();
+});
