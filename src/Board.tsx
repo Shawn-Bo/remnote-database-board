@@ -13,12 +13,10 @@ import {
 import { ViewToolbar, ViewPanel, type Panel } from "./ViewControls";
 import { Icon, fieldIcon } from "./Icons";
 import { PropertyCell } from "./PropertyCell";
-import { draftKey, type LegacyDraftReader } from "./drafts";
 
 interface Props {
   port: BoardPort;
   initial: Partial<Config> & { tagId: string };
-  legacyDrafts?: LegacyDraftReader;
   renderNote?: (remId: string) => React.ReactNode;
   rowScope?: string[];
   onConfig?: (config: Config) => Promise<void>;
@@ -35,7 +33,6 @@ const message = (e: unknown) => (e instanceof Error ? e.message : String(e));
 export function Board({
   port,
   initial,
-  legacyDrafts,
   renderNote,
   rowScope,
   onConfig,
@@ -74,8 +71,6 @@ export function Board({
   const [over, setOver] = useState("");
   const [dropBefore, setDropBefore] = useState("");
   const [selectedId, setSelectedId] = useState("");
-  const [legacyText, setLegacyText] = useState("");
-  const [legacyError, setLegacyError] = useState("");
   const [scope, setScope] = useState(
     rowScope ? { tagId: initial.tagId, rowIds: rowScope } : undefined,
   );
@@ -284,26 +279,6 @@ export function Board({
     snapshot?.fields.filter((field) =>
       snapshot.rows.some((row) => row.cells[field.id]?.richText),
     ) ?? [];
-  useEffect(() => {
-    let active = true;
-    setLegacyText("");
-    setLegacyError("");
-    if (selectedId && config.recordFieldId && legacyDrafts) {
-      void legacyDrafts
-        .get(draftKey(config.tagId, selectedId, config.recordFieldId))
-        .then((saved) => {
-          if (active && saved && saved.text !== saved.base.text)
-            setLegacyText(saved.text);
-        })
-        .catch(() => {
-          if (active) setLegacyError("旧版草稿暂时无法读取；已保留原数据。");
-        });
-    }
-    return () => {
-      active = false;
-    };
-  }, [selectedId, config.tagId, config.recordFieldId, legacyDrafts]);
-
   const move = async (row: Row, target: string) => {
     if (!groupField) return true;
     try {
@@ -986,18 +961,6 @@ export function Board({
               <p role="alert" className="native-note-error">
                 {error}
               </p>
-            )}
-            {legacyError && (
-              <p role="alert" className="native-note-error">
-                {legacyError}
-              </p>
-            )}
-            {legacyText && (
-              <details className="legacy-draft">
-                <summary>旧版未提交草稿</summary>
-                <p>可复制到下面的原笔记中；原草稿仍保留在此设备。</p>
-                <pre>{legacyText}</pre>
-              </details>
             )}
             <div className="native-note-slot">
               {renderNote ? (

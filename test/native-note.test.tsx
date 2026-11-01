@@ -4,7 +4,6 @@ import ReactDOM from "react-dom";
 import { act, Simulate } from "react-dom/test-utils";
 import { afterEach, expect, it, vi } from "vitest";
 import { Board } from "../src/Board";
-import { legacyDraftReader } from "../src/drafts";
 import type { BoardPort } from "../src/model";
 import fixture from "../src/demo-snapshot.json";
 import config from "../src/demo-config.json";
@@ -58,34 +57,6 @@ it("opens the original Rem in the native editor without a second body or save-ba
   await click('[aria-label="关闭笔记"]');
   expect(port.load).toHaveBeenCalledTimes(2);
   expect(port.write).not.toHaveBeenCalled();
-});
-it("offers an old unsaved draft for manual recovery without applying or deleting it", async () => {
-  const get = vi.fn(async () => ({
-    base: { text: "原记录", refs: [] },
-    text: "旧版未提交内容",
-  }));
-  const { port } = await mount({ legacyDrafts: legacyDraftReader(get) });
-  await click(".card-title");
-  expect(root.querySelector(".legacy-draft pre")?.textContent).toBe(
-    "旧版未提交内容",
-  );
-  expect(root.querySelector("[data-native-rem]")).not.toBeNull();
-  await click('[aria-label="关闭笔记"]');
-  expect(port.write).not.toHaveBeenCalled();
-});
-it("keeps the native editor usable if a legacy draft cannot be read", async () => {
-  await mount({
-    legacyDrafts: {
-      get: async () => {
-        throw new Error("unavailable");
-      },
-    },
-  });
-  await click(".card-title");
-  expect(
-    root.querySelector('[role="dialog"] [role="alert"]')?.textContent,
-  ).toContain("旧版草稿暂时无法读取");
-  expect(root.querySelector("[data-native-rem]")).not.toBeNull();
 });
 it("opens the complete native note and closes the board without writing a copied body", async () => {
   const close = vi.fn(async () => {});

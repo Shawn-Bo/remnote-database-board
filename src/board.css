@@ -104,7 +104,6 @@ body { margin: 0; }
 .drawer-heading-title { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .native-note-slot { flex:1; min-height:0; overflow:hidden; }.native-note-editor { width:100%; height:100%; overflow:hidden; }
 .native-note-error { color:#d44c47; font-size:13px; margin:8px 16px; }
-.legacy-draft { font-size:12px; margin:8px 16px; padding:8px; border:1px solid var(--line); max-height:200px; overflow:auto; flex-shrink:0; }.legacy-draft pre { white-space:pre-wrap; user-select:text; }
 .original-note { color:var(--blue)!important; padding:16px!important; }
 .primary-button { background:var(--blue)!important; color:#fff!important; padding:6px 10px; font-size:12px!important; }
 

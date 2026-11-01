@@ -9,17 +9,12 @@ import { Board } from "../Board";
 import { SdkBoardPort } from "../sdk-port";
 import { LAST_CONFIG_KEY, configKey, saveConfig } from "../config";
 import { readPaneContext } from "../widget-context";
-import { legacyDraftReader } from "../drafts";
 import type { Config } from "../model";
 import "../board.css";
 
 function BoardWidget() {
   const plugin = usePlugin();
   const port = useMemo(() => new SdkBoardPort(plugin), [plugin]);
-  const legacyDrafts = useMemo(
-    () => legacyDraftReader((key) => plugin.storage.getLocal(key)),
-    [plugin],
-  );
   const [context, setContext] = useState<{
     initial: Partial<Config> & { tagId: string };
     rowScope?: string[];
@@ -60,7 +55,6 @@ function BoardWidget() {
       <Board
         port={port}
         initial={context.initial}
-        legacyDrafts={legacyDrafts}
         renderNote={(remId) => <NativeNote key={remId} remId={remId} />}
         rowScope={context.rowScope}
         onConfig={persist}
